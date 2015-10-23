@@ -1,0 +1,690 @@
+<?php
+
+function getPeople ()
+{
+	global $conn;
+
+	$array = array ();
+	$sql = "
+		SELECT
+			id,
+			name,
+			family_name,
+			given_name,
+			additional_name,
+			name_parser
+		FROM
+			parladata_person
+	";
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		while ($row = pg_fetch_assoc($result)) {
+			$array[$row['id']] = $row;
+		}
+	}
+	return $array;
+}
+
+function getPersonOrganization ($person_id)
+{
+	global $conn;
+
+	$sql = "
+		SELECT
+			organization_id
+		FROM
+			parladata_membership
+		WHERE
+			person_id = '" . (int)$person_id . "'
+		ORDER BY
+			id DESC
+		LIMIT 1
+	";
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		$row = pg_fetch_assoc($result);
+		if (!empty ($row)) return $row['organization_id'];
+	}
+	return 96;	 //	Ostali
+}
+
+function sessionExists ($session_id)
+{
+	global $conn;
+
+	$sql = "
+		SELECT
+			*
+		FROM
+			parladata_session
+		WHERE
+			gov_id = '" . pg_escape_string ($conn, $session_id) . "'
+	";
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		if (pg_num_rows ($result) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function getPersonIdByName ($name, $revert = false)
+{
+	global $people;
+
+	$tmparr = array ();
+	foreach ($people as $key => $item) {
+
+		$namelist = preg_split ('/,/i', $item['name_parser']);
+
+		$score = 999;
+		foreach ($namelist as $cmpname) {
+			$s = levenshtein (mb_strtolower ($name, 'UTF-8'), mb_strtolower ($cmpname, 'UTF-8'), 1, 2, 2);
+			if ($s < $score) {
+				$score = $s;
+				$tmparr[$key] = $s;
+			}
+		}
+	}
+	asort ($tmparr);
+
+	$num = current ($tmparr);
+//	print_r (array ($name, $num));
+
+	if ($num <= 6) {	//	Should work :)
+		return key ($tmparr);	//	NAME: $people[key ($tmparr)]
+	} else {
+		return addPerson ($name);
+	}
+}
+
+function parseSessionsList ($content, $organization_id)
+{
+	$data = str_get_html ($content);
+
+	//	Check for single sessions
+	$islist = $data->find('table.dataTableExHov', 0);
+	if (!empty ($islist)) {
+		$content = $data->find('table.dataTableExHov', 0)->find ('tbody a.outputLink');
+	}
+
+	foreach ($content as $link) {
+		$session_name = $link->text();
+
+		$session_link = $link->href;
+		$session_nouid = preg_replace ('/\&uid.*$/is', '', $session_link);
+
+		// Date
+		if ($organization_id != 95) {
+			$date = trim ($link->parent()->next_sibling()->next_sibling()->next_sibling()->text());
+		} else {
+			$date = trim ($link->parent()->next_sibling()->next_sibling()->text());
+		}
+		$date = str_replace ('(', '', $date);
+		$date = str_replace (')', '', $date);
+		$date = DateTime::createFromFormat ('d.m.Y', $date);
+		$session_date = $date->format ('Y-m-d');
+
+		$tmp = array (
+			'name'		=> trim ($session_name),
+			'link'		=> trim ($session_link),
+			'link_noid'	=> trim ($session_nouid),
+			'date'		=> trim ($session_date),
+			'speeches'	=> array ()
+		);
+
+		if ($date < new DateTime('NOW')) {
+
+			// Check if session already imported
+			if (sessionExists ($session_nouid)) continue;
+
+			// Get session
+			$session = file_get_html ('http://www.dz-rs.si' . $session_link);
+
+			// Parse data
+			$sparea = $session->find ('span.outputText');
+			foreach ($sparea as $sp) {
+				if ($sp->innerText() == '<h3>Zapisi seje</h3>') {
+					$sptable = $sp->parent()->find('a.outputLink');
+
+					if (!empty ($sptable)) {
+						foreach ($sptable as $speeches) {
+							if (stripos ($speeches->innerText(), "pregled") === false) {
+								$datum = '';
+								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
+								}
+								$speech = parseSpeeches ('http://www.dz-rs.si' . $speeches->href, $datum);
+								$tmp['speeches'][$speech['datum']] = $speech;
+
+							} else {
+								if (SKIP_WHEN_REVIEWS) continue 3;
+							}
+						}
+					}
+					break;
+				}
+
+			}
+
+			// Parse documents
+			$tmp['documents'] = array ();
+			$docarea = $session->find ('span.outputText');
+			foreach ($docarea as $sp) {
+				if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
+					$doctable = $sp->parent()->next_sibling()->find('a');
+					if (!empty ($doctable)) {
+						foreach ($doctable as $doc) {
+							if (stripos ($doc->innerText(), "pregled") === false) {
+								$tmp['documents'][] = parseDocument ('http://www.dz-rs.si' . $doc->href);
+
+							} else {
+								if (SKIP_WHEN_REVIEWS) continue 3;
+							}
+						}
+					}
+					break;
+				}
+			}
+
+			// Parse voting data
+			$tmp['voting'] = array ();
+			$votearea = $session->find('table.dataTableExHov', 0);
+			if (!empty ($votearea)) {
+				foreach ($votearea->find ('tbody td a.outputLink') as $votes) {
+					if (preg_match ('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
+						$tmp['voting'][] = parseVotes ('http://www.dz-rs.si' . $votes->href);
+					}
+				}
+			}
+
+			//	Izpis podatkov celotne seje
+//			print_r ($tmp);
+//exit();
+
+			//	Add to DB
+			saveSession ($tmp, $organization_id);
+//			exit();
+		}
+	}
+}
+
+function getDTs ()
+{
+	global $conn;
+
+	$array = array();
+	$sql = "
+		SELECT
+			id,
+			gov_id
+		FROM
+			parladata_organization
+		WHERE
+			classification IN ('kolegij') -- 'odbor','komisija','kolegij'
+			AND
+			gov_id IS NOT NULL
+	";
+
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		while ($row = pg_fetch_assoc($result)) {
+			$array[$row['id']] = $row['gov_id'];
+		}
+	}
+	return $array;
+}
+
+function parseSessionsDT ($url)
+{
+	$dts = getDTs ();
+
+	foreach ($dts as $gov_key => $gov_id) {
+		parseSessions (array (
+			$url . $gov_id
+		), $gov_key, true);
+	}
+}
+
+function parseSessions ($urls, $organization_id, $dt = false)
+{
+	foreach ($urls as $url) {
+		//	Get main page
+		$base = file_get_contents($url);
+//print_r ("B: " . $url);
+		//	Parse main page
+		parseSessionsList ($base, $organization_id);
+
+		//	Retrieve cookies
+		$cookiess = '';
+		foreach ($http_response_header as $s){
+			if (preg_match('|^Set-Cookie:\s*([^=]+)=([^;]+);(.+)$|',$s,$parts))
+				$cookiess.= $parts[1] . '=' . $parts[2] . '; ';
+		}
+		$cookiess = substr ($cookiess, 0, -2);
+
+		$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1042_';
+
+		//	Retreive pager form action
+		preg_match('/form id="' . $form_id . ':sf:form1".*?action="(.*?)"/', $base, $matches);
+
+		//	Retreive some ViewState I have no fucking clue what it is for, but it must be present in POST
+		preg_match('/id="javax\.faces\.ViewState" value="(.*?)"/', $base, $matchess);
+
+		//	Retreive number of pages
+		preg_match('/Page 1 of (\d+)/i', $base, $matchesp);
+
+		if ((int)$matchesp[1] > 1) {
+
+			for ($i = 2; $i <= (int)$matchesp[1]; $i++) {
+				//	Get next page
+				$postdata = http_build_query(
+					array(
+						$form_id . ':sf:form1' => $form_id . ':sf:form1',
+						$form_id . ':sf:form1:menu1' => CURRENT_SESSION,
+						$form_id . ':sf:form1:button2' => 'Išči seje',
+						$form_id . ':sf:form1:tableEx1:deluxe1__pagerNext.x' => 1,
+						$form_id . ':sf:form1:tableEx1:goto1__pagerGoText' => ($i - 1),
+						'javax.faces.ViewState' => $matchess[1]
+					)
+				);
+				$opts = array('http' =>
+					array(
+						'method'  => 'POST',
+						'header'  => 'Cookie: ' . $cookiess . "\r\n" . 'Content-type: application/x-www-form-urlencoded',
+						'content' => $postdata
+					)
+				);
+				$context  = stream_context_create($opts);
+				$subpage = file_get_contents('http://www.dz-rs.si' . $matches[1], false, $context);
+//print_r ('http://www.dz-rs.si' . $matches[1]);
+				//	Parse sub page
+				parseSessionsList ($subpage, $organization_id);
+			}
+
+		}
+	}
+}
+
+function parseSpeeches ($url, $datum)
+{
+//	print_r ($url);
+	$data = file_get_html ($url);
+
+	// Info
+	$array = array (
+		'naziv' => $data->find('.wpsPortletBody table tr', 1)->find('td', 1)->text(),
+		'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
+		'talks'	=> array ()
+	);
+
+	// Data
+	$content = $data->find('fieldset', 0)->find('span.outputText', 1);
+	$content = html_entity_decode ($content->innertext);
+	$content = strip_tags($content, '<br><b>');
+
+	$content = preg_replace ('/<br>/', "\n", $content);
+
+	// Umik "TRAK ..."
+	$content = preg_replace ('/[\n\r](<b>)?(\d+\. TR.*?)(<\/b>)?[\n\r]/s', '', $content);
+
+	// Umik "(nadaljevanje")
+	$content = preg_replace ('/([\n\r]+\t\(nadaljevanje\)? )/is', '', $content);
+
+	// Umik prekinitev sej
+	$content = preg_replace ('/(\t(<b>)?\(Seja.*?ob [\d\.]{5,6}\)(<\/b>)?[\n\r]+)/si', '', $content);
+
+	// Umik ure konca
+	$content = preg_replace ('/([\n\r](<b>)?\(?Seja je bila končana \d+\..*?ob.*\)?(<\/b>)?)/si', '', $content);
+	$content = preg_replace ('/([\n\r](<b>)?\(?Seja se je končala \d+\..*?ob.*\)?(<\/b>)?)/si', '', $content);
+	$content = preg_replace ('/([\n\r](<b>)?\(?Seja je bila prekinjena \d+\..*?ob.*\)?(<\/b>)?)/si', '', $content);
+
+	// Umik dvojnih presledkov
+	$content = str_replace ('  ', ' ', trim ($content));
+
+	$content = preg_replace ('/(<b>[ \t]*<\/b>)/s', ' ', trim ($content));
+	$content = preg_replace ('/(<\/b>[ \t]*<b>)/s', ' ', trim ($content));
+
+	// Umik dvojnih breakov
+	$content = preg_replace ('/([\n\r]+)/', "\n", trim ($content));
+//print_r ($content);
+	// Split govorov na posamezne dele
+	$parts = preg_split ('/[\n\r][\t ]?<b>[\t ]*([<\/b>\tA-ZČŠŽĐÖĆÜ,\.\(\) ]{4,40}?(\([\w ]*?\))??)[: <\/b>]{2,6}/s', $content, null, PREG_SPLIT_DELIM_CAPTURE); // old: '/[\n\r]<b>([A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{3,}(\(.*?\))??)[: <\/b>]{2,6}/s'
+//print_r ($parts);exit();
+	if (!empty ($parts)) {
+		if (strpos (strip_tags ($parts[0]), 'REPUBLIKA SLOVENIJA') === 0) {
+			unset ($parts[0]);
+		}
+		$cnt = key ($parts);
+		$end = sizeof ($parts);
+
+		for ($i = $cnt; $i <= $end; $i++) {
+			//	Iskanje osebe/imena
+			if (isset ($parts[$i]) && preg_match ('/^[A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{6,40}(\(.*?\))?/s', $parts[$i])) {
+
+				$name = trim ($parts[$i]);
+//				echo "-- " . $name . '--' . "\n";
+				if (strpos ($name, '(') > 0) $name = substr ($name, 0, strrpos ($name, '('));
+
+				//  Remove prefixes, some common typos
+				$replaces = array (
+						'podpredsednik',
+						'predsednik',
+						'podpredsednica',
+						'predsednica',
+						'predsedujoči',
+						'predsedujoča',
+						'predsedujoč',
+						'prof.',
+						'dr.',
+						'mag.',
+
+						//  Tyops
+						'podpredsendica',
+						'podpredsedik',
+						'predsednk',
+						'predsedik',
+						'predsenik'
+				);
+				$name = str_ireplace ($replaces, '', $name);
+
+				$name = preg_replace ('/^(\.) ?/s', '', trim ($name));
+				$name = str_replace ('  ', ' ', trim ($name));
+				//print_r ($name);
+
+				//	Remove some more trash
+				if (preg_match ('/REPUBLI|ODBOR|DRŽAVN|KOMISIJ|JAVNO|DRUŠTV|SINDIKA/s', $name)) continue;
+
+				$tmp = array (
+					'id' => getPersonIdByName ($name),
+					'ime' => $name
+				);
+
+				// Preveri, če je pred tekstom še ime stranke v ()
+				if (isset ($parts[$i + 1]) && preg_match ('/\(.*?\)$/s', trim ($parts[$i + 1]))) {
+					$tmp['stranka'] = substr (trim ($parts[$i + 1]), strrpos (trim ($parts[$i + 1]), '(') + 1, -1);
+					$i++;
+
+					if (isset ($parts[$i + 1])) {
+						$tmp['vsebina'] = preg_replace ('/\t+/is', '', trim ($parts[$i + 1]));
+						$tmp['vsebina'] = strip_tags ($tmp['vsebina']);
+						$i++;
+					}
+
+				} elseif (isset ($parts[$i + 1])) {
+					$tmp['vsebina'] = preg_replace ('/\t+/is', '', trim ($parts[$i + 1]));
+					$tmp['vsebina'] = strip_tags ($tmp['vsebina']);
+					$i++;
+				}
+
+				$array['talks'][] = $tmp;
+			}
+		}
+	}
+	return $array;
+}
+
+function parseVotes ($url)
+{
+	global $people;
+
+	$array = array ();
+	$data = file_get_html ($url);
+
+	$info = $data->find('.panelGrid', 0)->find('tr');
+	foreach ($info as $row) {
+		foreach ($row->find('td') as $td) {
+			$tdinfo = trim($td->text());
+
+			if (strtolower($tdinfo) == 'naslov:') {
+				$array['naslov'] = trim ($td->next_sibling ()->text());
+			}
+			if (strtolower($tdinfo) == 'dokument:') {
+				$array['dokument'] = trim ($td->next_sibling ()->text());
+			}
+			if (strtolower($tdinfo) == 'glasovanje dne:' && preg_match ('/([0-9\.]{10}).*?([0-9\:]{8})/is', $td->next_sibling ()->text(), $tmp)) {
+				$array['date'] = DateTime::createFromFormat ('d.m.Y', $tmp[1])->format ('Y-m-d');
+				$array['time'] = $tmp[2];
+			}
+			if (strtolower ($tdinfo) == 'epa:') {
+				$array['epa'] = $td->next_sibling ()->text();
+				$array['epa_link'] = $td->next_sibling ()->find('a', 0)->href;
+			}
+			if (strtolower ($tdinfo) == 'faza postopka:') {
+				$array['faza'] = $td->next_sibling ()->text();
+			}
+			if (strtolower ($tdinfo) == 'za:') {
+				$array['za'] = $td->next_sibling ()->text();
+			}
+			if (strtolower($tdinfo) == 'proti:') {
+				$array['proti'] = $td->next_sibling ()->text();
+			}
+			if (strtolower($tdinfo) == 'kvorum:') {
+				$array['kvorum'] = $td->next_sibling ()->text();
+			}
+		}
+	}
+
+	$content = $data->find('fieldset', 0)->find('span.outputText');
+	if (!empty ($content[1]))
+		$content = $content[1];
+
+	$cnt = 0;
+	$array['votes'] = array ();
+	foreach ($content->find('tr') as $t) {
+		if ($cnt > 0) {
+			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', $t->innertext, $matches)) {
+				unset ($matches[0]);
+				$matches[4] = getPersonIdByName (trim ($matches['1']), true);
+//				$matches[5] = $people[$matches[4]]['name'];	// test
+				$array['votes'][] = $matches;
+			}
+		}
+		$cnt++;
+	}
+
+	return $array;
+}
+
+function parseDocument ($url)
+{
+	$array = array ();
+	$data = file_get_html ($url);
+
+	$info = $data->find('.wpsPortletBody form table tr');
+	foreach ($info as $key => $item) {
+		if (stripos ($item->text(), 'Polni nazi') !== false) {
+			$array['session'] = $info[$key]->find('td', 1)->text();
+		}
+		if (stripos ($item->text(), 'Naslov dokumenta') !== false) {
+			$array['title'] = $info[$key]->find('td', 1)->text();
+		}
+		if (stripos ($item->text(), 'Datum dokumenta') !== false) {
+			$array['date'] = DateTime::createFromFormat ('d.m.Y', trim ($info[$key]->find('td', 1)->text()))->format ('Y-m-d');
+		}
+	}
+
+	$files = $data->find('.panelGrid', 0)->find('tr');
+	foreach ($files as $row) {
+		foreach ($row->find('td a') as $td) {
+			$tdinfo = trim($td->text());
+
+			if (preg_match ('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
+
+				$filet = file_get_contents ($matches[1]);
+				if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
+					$array['filename'] = $tdinfo;
+					$array['link'] = $matches2[1];
+				}
+			}
+
+		}
+	}
+
+	return $array;
+}
+
+function saveSession ($session, $organization_id = 95)
+{
+	global $conn;
+
+	$sql = "
+		INSERT INTO
+			parladata_session
+		(created_at, updated_at, name, gov_id, organization_id, start_time)
+		VALUES
+		(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "')
+		RETURNING id
+	";
+	$result = pg_query ($conn, $sql);
+	if (pg_affected_rows ($result) > 0) {
+		$insert_row = pg_fetch_row ($result);
+		$session_id = $insert_row[0];
+
+		//	Save speeches
+		foreach ($session['speeches'] as $speech_date => $speech) {
+			$order = 0;
+			foreach ($speech['talks'] as $talk) {
+				$order+=10;
+
+				if ($talk['id'] == 0) {
+					$person_id = addPerson ($talk['ime']);
+					if (!empty ($person_id)) {
+						$talk['id'] = $person_id;
+					} else {
+						continue;
+					}
+				}
+
+				$sql = "
+					INSERT INTO
+						parladata_speech
+					(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id)
+					VALUES
+					(NOW(), NOW(), '" . pg_escape_string ($conn, $talk['id']) . "', '" . pg_escape_string ($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization ($talk['id']) . "')
+				";
+				pg_query ($conn, $sql);
+			}
+		}
+
+		//	Save votes
+		foreach ($session['voting'] as $voting) {
+
+			//	Set name to "dokument" when "naslov" is empty
+			$name = (!empty ($voting['naslov'])) ? $voting['naslov'] : $voting['dokument'];
+
+			$sql = "
+				INSERT INTO
+					parladata_motion
+				(created_at, updated_at, organization_id, date, session_id, text, party_id)
+				VALUES
+				(NOW(), NOW(), '" . $organization_id . "', '" . $voting['date'] . "', '" . $session_id . "', '" . pg_escape_string ($conn, $name) . "', '" . $organization_id . "')
+				RETURNING id
+			";
+			$result = pg_query ($conn, $sql);
+			if (pg_affected_rows ($result) > 0) {
+				$insert_row = pg_fetch_row ($result);
+				$motion_id = $insert_row[0];
+
+				//	Parse votes etc.
+				$sql = "
+					INSERT INTO
+						parladata_vote
+					(created_at, updated_at, name, motion_id, organization_id, session_id, start_time)
+					VALUES
+					(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "')
+					RETURNING id
+				";
+				$result = pg_query ($conn, $sql);
+				if (pg_affected_rows ($result) > 0) {
+					$insert_row = pg_fetch_row ($result);
+					$voting_id = $insert_row[0];
+
+					$order = 0;
+					foreach ($voting['votes'] as $vote) {
+						$order+=10;
+
+						if ($vote[4] == 0) {
+							$person_id = addPerson ($vote[1]);
+							if (!empty ($person_id)) {
+								$vote[4] = $person_id;
+							} else {
+								continue;
+							}
+						}
+
+						if (strtolower ($vote[3]) == 'ni') {
+							$realvote = (!empty ($vote[2])) ? 'kvorum' : 'ni';
+						} else {
+							$realvote = strtolower ($vote[3]);
+						}
+
+						$sql = "
+							INSERT INTO
+								parladata_ballot
+							(created_at, updated_at, vote_id, voter_id, option, voterparty_id)
+							VALUES
+							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, $realvote) . "', '" . getPersonOrganization ($vote[4]) . "')
+						";
+						pg_query ($conn, $sql);
+					}
+				}
+			}
+		}
+
+		//	Save documents
+		foreach ($session['documents'] as $document) {
+			$sql = "
+				INSERT INTO
+					parladata_link
+				(created_at, updated_at, url, note, organization_id, date, name, session_id)
+				VALUES
+				(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
+			";
+			pg_query ($conn, $sql);
+
+			if (DOC_DOWNLOAD) {
+				file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
+			}
+		}
+	}
+}
+
+function addPerson ($name)
+{
+	global $conn, $people;
+
+	$sql = "
+		INSERT INTO
+			parladata_person
+		(created_at, updated_at, name, name_parser, active)
+		VALUES
+		(NOW(), NOW(), '" . pg_escape_string ($conn, mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")) . "', '" . pg_escape_string ($conn, mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")) . "', 'true')
+		RETURNING id
+	";
+	$result = pg_query ($conn, $sql);
+	if (pg_affected_rows ($result) > 0) {
+		$insert_row = pg_fetch_row ($result);
+		$person_id = $insert_row[0];
+
+		$people = getPeople ();
+
+		return $person_id;
+	}
+	return 0;
+}
+
+function toAscii ($str, $delimiter='-') {
+	$clean = iconv('UTF-8', 'ASCII//TRANSLIT', $str);
+	$clean = preg_replace("/[^a-zA-Z0-9\/_|+ -]/", '', $clean);
+	$clean = strtolower(trim($clean, '-'));
+	$clean = preg_replace("/[\/_|+ -]+/", $delimiter, $clean);
+
+	return $clean;
+}
+
+function logger ($message)
+{
+	error_log (date('D, d M Y H:i:s') . ' - ' . $message . "\n", 3, LOG_PATH);
+}
