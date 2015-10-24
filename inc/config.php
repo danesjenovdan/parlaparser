@@ -17,7 +17,7 @@ date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
 //  [SETTING] Logging
-define ('LOG_PATH', 'log/errors.txt');
+define ('LOG_PATH', 'log/trace.log');
 define ('LOGGING', true);
 ini_set('error_log', 'log/php.log');
 
