@@ -370,7 +370,7 @@ function parseSpeeches ($url, $datum)
 
 	// Info
 	$array = [
-			'naziv' => $data->find('.wpsPortletBody table tr', 1)->find('td', 1)->text(),
+			'naziv' => ($dtitle = $data->find('.wpsPortletBody table tr', 1)) ? $dtitle->find('td', 1)->text() : 'Ni naziva',
 			'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
 			'talks'	=> []
 	];
