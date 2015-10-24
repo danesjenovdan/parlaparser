@@ -35,6 +35,11 @@ define ('SKIP_WHEN_REVIEWS', false);
 $dtclassifs = ['odbor','komisija','kolegij'];
 define ('DT_CLASSIF', json_encode($dtclassifs));
 
+//  [SETTINGS] Parser settings
+define ('PARSE_SPEECHES', true);
+define ('PARSE_VOTES', true);
+define ('PARSE_DOCS', true);
+
 //	[SETTING] Database settings
 define ('PG_HOST',	'***REMOVED***');
 define ('PG_PORT',	5432);

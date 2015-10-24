@@ -158,8 +158,7 @@ function parseSessionsList ($content, $organization_id)
 				'name'		=> trim ($session_name),
 				'link'		=> trim ($session_link),
 				'link_noid'	=> trim ($session_nouid),
-				'date'		=> trim ($session_date),
-				'speeches'	=> array ()
+				'date'		=> trim ($session_date)
 		);
 
 		if ($date < new DateTime('NOW')) {
@@ -171,58 +170,65 @@ function parseSessionsList ($content, $organization_id)
 			$session = file_get_html (DZ_URL . $session_link);
 
 			// Parse data
-			$sparea = $session->find ('span.outputText');
-			foreach ($sparea as $sp) {
-				if ($sp->innerText() == '<h3>Zapisi seje</h3>') {
-					$sptable = $sp->parent()->find('a.outputLink');
+			$tmp['speeches'] = array ();
+			if (PARSE_SPEECHES) {
+				$sparea = $session->find ('span.outputText');
+				foreach ($sparea as $sp) {
+					if ($sp->innerText() == '<h3>Zapisi seje</h3>') {
+						$sptable = $sp->parent()->find('a.outputLink');
 
-					if (!empty ($sptable)) {
-						foreach ($sptable as $speeches) {
-							if (stripos ($speeches->innerText(), "pregled") === false) {
-								$datum = '';
-								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
-									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
+						if (!empty ($sptable)) {
+							foreach ($sptable as $speeches) {
+								if (stripos ($speeches->innerText(), "pregled") === false) {
+									$datum = '';
+									if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+										$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
+									}
+									$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
+									$tmp['speeches'][$speech['datum']] = $speech;
+
+								} else {
+									if (SKIP_WHEN_REVIEWS) continue 3;
 								}
-								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
-								$tmp['speeches'][$speech['datum']] = $speech;
-
-							} else {
-								if (SKIP_WHEN_REVIEWS) continue 3;
 							}
 						}
+						break;
 					}
-					break;
-				}
 
+				}
 			}
 
 			// Parse documents
 			$tmp['documents'] = array ();
-			$docarea = $session->find ('span.outputText');
-			foreach ($docarea as $sp) {
-				if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
-					$doctable = $sp->parent()->next_sibling()->find('a');
-					if (!empty ($doctable)) {
-						foreach ($doctable as $doc) {
-							if (stripos ($doc->innerText(), "pregled") === false) {
-								$tmp['documents'][] = parseDocument (DZ_URL . $doc->href);
+			if (PARSE_DOCS) {
+				$docarea = $session->find('span.outputText');
+				foreach ($docarea as $sp) {
+					if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
+						$doctable = $sp->parent()->next_sibling()->find('a');
+						if (!empty ($doctable)) {
+							foreach ($doctable as $doc) {
+								if (stripos($doc->innerText(), "pregled") === false) {
+									$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
 
-							} else {
-								if (SKIP_WHEN_REVIEWS) continue 3;
+								} else {
+									if (SKIP_WHEN_REVIEWS) continue 3;
+								}
 							}
 						}
+						break;
 					}
-					break;
 				}
 			}
 
 			// Parse voting data
 			$tmp['voting'] = array ();
-			$votearea = $session->find('table.dataTableExHov', 0);
-			if (!empty ($votearea)) {
-				foreach ($votearea->find ('tbody td a.outputLink') as $votes) {
-					if (preg_match ('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
-						$tmp['voting'][] = parseVotes (DZ_URL . $votes->href);
+			if (PARSE_VOTES) {
+				$votearea = $session->find('table.dataTableExHov', 0);
+				if (!empty ($votearea)) {
+					foreach ($votearea->find('tbody td a.outputLink') as $votes) {
+						if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
+							$tmp['voting'][] = parseVotes(DZ_URL . $votes->href);
+						}
 					}
 				}
 			}
@@ -571,10 +577,10 @@ function parseDocument ($url)
 			foreach ($row->find('td a') as $td) {
 				$tdinfo = trim($td->text());
 
-				if (preg_match('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
+				if (preg_match ('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
 
-					$filet = file_get_contents($matches[1]);
-					if (preg_match('/url=(.*?)"/s', trim($filet), $matches2)) {
+					$filet = file_get_contents ($matches[1]);
+					if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
 						$array['filename'] = $tdinfo;
 						$array['link'] = $matches2[1];
 					}
@@ -582,6 +588,9 @@ function parseDocument ($url)
 
 			}
 		}
+	} else {
+		$array['filename'] = '';
+		$array['link'] = '';
 	}
 
 	return $array;
