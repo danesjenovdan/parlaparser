@@ -16,7 +16,10 @@ ini_set ('max_execution_time', 3600);
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
+//  [SETTING] Logging
 define ('LOG_PATH', 'log/errors.txt');
+define ('LOGGING', true);
+ini_set('error_log', 'log/php.log');
 
 //	Includes
 include_once 'simple_html_dom.php';

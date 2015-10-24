@@ -166,6 +166,9 @@ function parseSessionsList ($content, $organization_id)
 			// Check if session already imported
 			if (sessionExists ($session_nouid)) continue;
 
+			// Log
+			logger ('FETCH SESSION: ' . DZ_URL . $session_link);
+
 			// Get session
 			$session = file_get_html (DZ_URL . $session_link);
 
@@ -300,6 +303,7 @@ function parseSessionsDT ($url)
 function parseSessions ($urls, $organization_id, $dt = false)
 {
 	foreach ($urls as $url) {
+
 		//	Get main page
 		$base = file_get_contents($url);
 
@@ -368,9 +372,12 @@ function parseSpeeches ($url, $datum)
 {
 	$data = file_get_html ($url);
 
+	// Log
+	logger ('FETCH SPEECH: ' . $url);
+
 	// Info
 	$array = [
-			'naziv' => ($dtitle = $data->find('.wpsPortletBody table tr', 1)) ? $dtitle->find('td', 1)->text() : 'Ni naziva',
+			'naziv' => ($dtit = $data->find('.wpsPortletBody table tr', 1)) ? $dtit->find('td', 1)->text() : 'Ni naziva',
 			'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
 			'talks'	=> []
 	];
@@ -490,6 +497,9 @@ function parseVotes ($url)
 	$array = array ();
 	$data = file_get_html ($url);
 
+	// Log
+	logger ('FETCH VOTES: ' . $url);
+
 	$info = $data->find('.panelGrid', 0)->find('tr');
 	foreach ($info as $row) {
 		foreach ($row->find('td') as $td) {
@@ -556,6 +566,9 @@ function parseDocument ($url)
 {
 	$array = array ();
 	$data = file_get_html ($url);
+
+	// Log
+	logger ('FETCH DOC: ' . $url);
 
 	$info = $data->find('.wpsPortletBody form table tr');
 	foreach ($info as $key => $item) {
@@ -739,6 +752,9 @@ function addPerson ($name)
 {
 	global $conn, $people;
 
+	// Log
+	logger ('NEW PERSON: ' . $name);
+
 	$sql = "
 		INSERT INTO
 			parladata_person
@@ -782,5 +798,6 @@ function toAscii ($str, $delimiter='-') {
  */
 function logger ($message)
 {
-	error_log (date('D, d M Y H:i:s') . ' - ' . $message . "\n", 3, LOG_PATH);
+	if (LOGGING)
+		error_log (date('D, d M Y H:i:s') . ' - ' . $message . "\n", 3, LOG_PATH);
 }
