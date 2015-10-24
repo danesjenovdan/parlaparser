@@ -31,6 +31,10 @@ define ('DOC_LOCATION',	'doc/');
 //  [SETTING] Skip session if any draft message is found
 define ('SKIP_WHEN_REVIEWS', false);
 
+//  [SETTING] Classifications for DTs
+$dtclassifs = ['odbor','komisija','kolegij'];
+define ('DT_CLASSIF', json_encode($dtclassifs));
+
 //	[SETTING] Database settings
 define ('PG_HOST',	'***REMOVED***');
 define ('PG_PORT',	5432);
