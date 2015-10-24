@@ -390,6 +390,7 @@ function parseSpeeches ($url, $datum)
 				$name = str_ireplace ($replaces, '', $name);
 
 				$name = preg_replace ('/^(\.) ?/s', '', trim ($name));
+				$name = preg_replace ('/(\([A-Z]{2,}.*?\)\s?)\w/s', '', trim ($name)); // Removal of () in names
 				$name = str_replace ('  ', ' ', trim ($name));
 				//print_r ($name);
 
