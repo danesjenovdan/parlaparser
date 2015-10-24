@@ -254,7 +254,7 @@ function getDTs ()
 		FROM
 			parladata_organization
 		WHERE
-			classification IN ('kolegij') -- 'odbor','komisija','kolegij'
+			classification IN ('odbor','komisija','kolegij') -- 'odbor','komisija','kolegij'
 			AND
 			gov_id IS NOT NULL
 	";

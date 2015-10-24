@@ -22,28 +22,26 @@ define ('LOG_PATH', 'log/errors.txt');
 include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
-//  Download attached documents
+//  [SETTING] Download attached documents
 define ('DOC_DOWNLOAD',	false);
 
-//  Downloads location
+//  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'doc/');
 
-//  Skip session if any draft is found
-define ('SKIP_WHEN_REVIEWS',	false);
+//  [SETTING] Skip session if any draft message is found
+define ('SKIP_WHEN_REVIEWS', false);
 
-define ('DT_CLASSIF',   ['s']);
-
-//	Database settings
-define ('PG_HOST',	'localhost');
+//	[SETTING] Database settings
+define ('PG_HOST',	'192.168.110.31');
 define ('PG_PORT',	5432);
-define ('PG_USER',	'postgres');
-define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'database');
+define ('PG_USER',	'parladaddy');
+define ('PG_PASS',	'razvrat');
+define ('PG_NAME',	'parladata');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
 
-//	Session setting
+//	[SETTING] Session setting
 define ('CURRENT_SESSION', 'VII');
 
 //	Open connection to DB

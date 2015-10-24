@@ -17,7 +17,7 @@ $url_root = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbrano
 //pg_query ('DELETE FROM parladata_vote');
 //pg_query ('DELETE FROM parladata_motion');
 //pg_query ('DELETE FROM parladata_session');
-exit();
+//exit(); // DECIDE IF YOU WANT TO RUN -> FOR MARKO'S DEV
 
 // Jože požen
 parseSessionsDT ($url_root);
