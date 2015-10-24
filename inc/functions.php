@@ -254,7 +254,7 @@ function getDTs ()
 		FROM
 			parladata_organization
 		WHERE
-			classification IN ('odbor','komisija','kolegij') -- 'odbor','komisija','kolegij'
+			classification IN ('" . implode("','", json_decode(DT_CLASSIF)) . "')
 			AND
 			gov_id IS NOT NULL
 	";
@@ -558,26 +558,29 @@ function parseDocument ($url)
 		}
 		if (stripos ($item->text(), 'Naslov dokumenta') !== false) {
 			$array['title'] = $info[$key]->find('td', 1)->text();
+		} else {
+			$array['title'] = 'Brez naziva';
 		}
 		if (stripos ($item->text(), 'Datum dokumenta') !== false) {
 			$array['date'] = DateTime::createFromFormat ('d.m.Y', trim ($info[$key]->find('td', 1)->text()))->format ('Y-m-d');
 		}
 	}
 
-	$files = $data->find('.panelGrid', 0)->find('tr');
-	foreach ($files as $row) {
-		foreach ($row->find('td a') as $td) {
-			$tdinfo = trim($td->text());
+	if ($files = $data->find('.panelGrid', 0)) {
+		foreach ($files->find('tr') as $row) {
+			foreach ($row->find('td a') as $td) {
+				$tdinfo = trim($td->text());
 
-			if (preg_match ('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
+				if (preg_match('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
 
-				$filet = file_get_contents ($matches[1]);
-				if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
-					$array['filename'] = $tdinfo;
-					$array['link'] = $matches2[1];
+					$filet = file_get_contents($matches[1]);
+					if (preg_match('/url=(.*?)"/s', trim($filet), $matches2)) {
+						$array['filename'] = $tdinfo;
+						$array['link'] = $matches2[1];
+					}
 				}
-			}
 
+			}
 		}
 	}
 
