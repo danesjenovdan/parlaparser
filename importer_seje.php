@@ -20,7 +20,7 @@ $urls = array (
 //pg_query ('DELETE FROM parladata_vote');
 //pg_query ('DELETE FROM parladata_motion');
 //pg_query ('DELETE FROM parladata_session');
-exit();
+//exit(); // DECIDE IF YOU WANT TO RUN -> FOR MARKO'S DEV
 
 // Jože požen
 parseSessions ($urls, 95);
