@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Return list of all people
+ *
+ * @return array Array of people
+ */
 function getPeople ()
 {
 	global $conn;
@@ -25,6 +30,12 @@ function getPeople ()
 	return $array;
 }
 
+/**
+ * Return person's organization ID
+ *
+ * @param int $person_id Person ID
+ * @return int Organization ID
+ */
 function getPersonOrganization ($person_id)
 {
 	global $conn;
@@ -48,6 +59,12 @@ function getPersonOrganization ($person_id)
 	return 96;	 //	Ostali
 }
 
+/**
+ * Checks for session existance in database
+ *
+ * @param int $session_id Session ID
+ * @return bool
+ */
 function sessionExists ($session_id)
 {
 	global $conn;
@@ -69,7 +86,13 @@ function sessionExists ($session_id)
 	return false;
 }
 
-function getPersonIdByName ($name, $revert = false)
+/**
+ * Matches person's name with existing
+ *
+ * @param string $name Person's name
+ * @return int|mixed Person ID
+ */
+function getPersonIdByName ($name)
 {
 	global $people;
 
@@ -90,7 +113,6 @@ function getPersonIdByName ($name, $revert = false)
 	asort ($tmparr);
 
 	$num = current ($tmparr);
-//	print_r (array ($name, $num));
 
 	if ($num <= 6) {	//	Should work :)
 		return key ($tmparr);	//	NAME: $people[key ($tmparr)]
@@ -99,6 +121,12 @@ function getPersonIdByName ($name, $revert = false)
 	}
 }
 
+/**
+ * Parse single session page
+ *
+ * @param string $content Content of grabbed page
+ * @param int $organization_id Organization ID
+ */
 function parseSessionsList ($content, $organization_id)
 {
 	$data = str_get_html ($content);
@@ -127,11 +155,11 @@ function parseSessionsList ($content, $organization_id)
 		$session_date = $date->format ('Y-m-d');
 
 		$tmp = array (
-			'name'		=> trim ($session_name),
-			'link'		=> trim ($session_link),
-			'link_noid'	=> trim ($session_nouid),
-			'date'		=> trim ($session_date),
-			'speeches'	=> array ()
+				'name'		=> trim ($session_name),
+				'link'		=> trim ($session_link),
+				'link_noid'	=> trim ($session_nouid),
+				'date'		=> trim ($session_date),
+				'speeches'	=> array ()
 		);
 
 		if ($date < new DateTime('NOW')) {
@@ -140,7 +168,7 @@ function parseSessionsList ($content, $organization_id)
 			if (sessionExists ($session_nouid)) continue;
 
 			// Get session
-			$session = file_get_html ('http://www.dz-rs.si' . $session_link);
+			$session = file_get_html (DZ_URL . $session_link);
 
 			// Parse data
 			$sparea = $session->find ('span.outputText');
@@ -155,7 +183,7 @@ function parseSessionsList ($content, $organization_id)
 								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
 									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
 								}
-								$speech = parseSpeeches ('http://www.dz-rs.si' . $speeches->href, $datum);
+								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
 								$tmp['speeches'][$speech['datum']] = $speech;
 
 							} else {
@@ -177,7 +205,7 @@ function parseSessionsList ($content, $organization_id)
 					if (!empty ($doctable)) {
 						foreach ($doctable as $doc) {
 							if (stripos ($doc->innerText(), "pregled") === false) {
-								$tmp['documents'][] = parseDocument ('http://www.dz-rs.si' . $doc->href);
+								$tmp['documents'][] = parseDocument (DZ_URL . $doc->href);
 
 							} else {
 								if (SKIP_WHEN_REVIEWS) continue 3;
@@ -194,27 +222,31 @@ function parseSessionsList ($content, $organization_id)
 			if (!empty ($votearea)) {
 				foreach ($votearea->find ('tbody td a.outputLink') as $votes) {
 					if (preg_match ('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
-						$tmp['voting'][] = parseVotes ('http://www.dz-rs.si' . $votes->href);
+						$tmp['voting'][] = parseVotes (DZ_URL . $votes->href);
 					}
 				}
 			}
 
-			//	Izpis podatkov celotne seje
-//			print_r ($tmp);
-//exit();
+			//	Test: Izpis podatkov celotne seje
+			//print_r ($tmp);
+			//exit();
 
 			//	Add to DB
 			saveSession ($tmp, $organization_id);
-//			exit();
 		}
 	}
 }
 
+/**
+ * Parse DT organizations
+ *
+ * @return array Array of IDs
+ */
 function getDTs ()
 {
 	global $conn;
 
-	$array = array();
+	$array = [];
 	$sql = "
 		SELECT
 			id,
@@ -236,23 +268,35 @@ function getDTs ()
 	return $array;
 }
 
+/**
+ * Parse DT pages
+ *
+ * @param string $url DT sessions URL root
+ */
 function parseSessionsDT ($url)
 {
 	$dts = getDTs ();
 
 	foreach ($dts as $gov_key => $gov_id) {
 		parseSessions (array (
-			$url . $gov_id
+				$url . $gov_id
 		), $gov_key, true);
 	}
 }
 
+/**
+ * Parses sessions, fetching speeches, votes, documents
+ *
+ * @param array $urls URLs of sessions lists
+ * @param int $organization_id Organization ID
+ * @param bool|false $dt Pages of DT
+ */
 function parseSessions ($urls, $organization_id, $dt = false)
 {
 	foreach ($urls as $url) {
 		//	Get main page
 		$base = file_get_contents($url);
-//print_r ("B: " . $url);
+
 		//	Parse main page
 		parseSessionsList ($base, $organization_id);
 
@@ -264,6 +308,7 @@ function parseSessions ($urls, $organization_id, $dt = false)
 		}
 		$cookiess = substr ($cookiess, 0, -2);
 
+		//  Search on DT page or not TODO: better solution needed
 		$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1042_';
 
 		//	Retreive pager form action
@@ -280,25 +325,25 @@ function parseSessions ($urls, $organization_id, $dt = false)
 			for ($i = 2; $i <= (int)$matchesp[1]; $i++) {
 				//	Get next page
 				$postdata = http_build_query(
-					array(
-						$form_id . ':sf:form1' => $form_id . ':sf:form1',
-						$form_id . ':sf:form1:menu1' => CURRENT_SESSION,
-						$form_id . ':sf:form1:button2' => 'Išči seje',
-						$form_id . ':sf:form1:tableEx1:deluxe1__pagerNext.x' => 1,
-						$form_id . ':sf:form1:tableEx1:goto1__pagerGoText' => ($i - 1),
-						'javax.faces.ViewState' => $matchess[1]
-					)
+						array(
+								$form_id . ':sf:form1' => $form_id . ':sf:form1',
+								$form_id . ':sf:form1:menu1' => CURRENT_SESSION,
+								$form_id . ':sf:form1:button2' => 'Išči seje',
+								$form_id . ':sf:form1:tableEx1:deluxe1__pagerNext.x' => 1,
+								$form_id . ':sf:form1:tableEx1:goto1__pagerGoText' => ($i - 1),
+								'javax.faces.ViewState' => $matchess[1]
+						)
 				);
 				$opts = array('http' =>
-					array(
-						'method'  => 'POST',
-						'header'  => 'Cookie: ' . $cookiess . "\r\n" . 'Content-type: application/x-www-form-urlencoded',
-						'content' => $postdata
-					)
+						array(
+								'method'  => 'POST',
+								'header'  => 'Cookie: ' . $cookiess . "\r\n" . 'Content-type: application/x-www-form-urlencoded',
+								'content' => $postdata
+						)
 				);
 				$context  = stream_context_create($opts);
-				$subpage = file_get_contents('http://www.dz-rs.si' . $matches[1], false, $context);
-//print_r ('http://www.dz-rs.si' . $matches[1]);
+				$subpage = file_get_contents(DZ_URL . $matches[1], false, $context);
+
 				//	Parse sub page
 				parseSessionsList ($subpage, $organization_id);
 			}
@@ -307,17 +352,22 @@ function parseSessions ($urls, $organization_id, $dt = false)
 	}
 }
 
+/**
+ * Find speeches on URL
+ *
+ * @param string $url URL to fetch
+ * @return array Array of speeches
+ */
 function parseSpeeches ($url, $datum)
 {
-//	print_r ($url);
 	$data = file_get_html ($url);
 
 	// Info
-	$array = array (
-		'naziv' => $data->find('.wpsPortletBody table tr', 1)->find('td', 1)->text(),
-		'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
-		'talks'	=> array ()
-	);
+	$array = [
+			'naziv' => $data->find('.wpsPortletBody table tr', 1)->find('td', 1)->text(),
+			'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
+			'talks'	=> []
+	];
 
 	// Data
 	$content = $data->find('fieldset', 0)->find('span.outputText', 1);
@@ -348,10 +398,10 @@ function parseSpeeches ($url, $datum)
 
 	// Umik dvojnih breakov
 	$content = preg_replace ('/([\n\r]+)/', "\n", trim ($content));
-//print_r ($content);
+
 	// Split govorov na posamezne dele
 	$parts = preg_split ('/[\n\r][\t ]?<b>[\t ]*([<\/b>\tA-ZČŠŽĐÖĆÜ,\.\(\) ]{4,40}?(\([\w ]*?\))??)[: <\/b>]{2,6}/s', $content, null, PREG_SPLIT_DELIM_CAPTURE); // old: '/[\n\r]<b>([A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{3,}(\(.*?\))??)[: <\/b>]{2,6}/s'
-//print_r ($parts);exit();
+
 	if (!empty ($parts)) {
 		if (strpos (strip_tags ($parts[0]), 'REPUBLIKA SLOVENIJA') === 0) {
 			unset ($parts[0]);
@@ -364,7 +414,6 @@ function parseSpeeches ($url, $datum)
 			if (isset ($parts[$i]) && preg_match ('/^[A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{6,40}(\(.*?\))?/s', $parts[$i])) {
 
 				$name = trim ($parts[$i]);
-//				echo "-- " . $name . '--' . "\n";
 				if (strpos ($name, '(') > 0) $name = substr ($name, 0, strrpos ($name, '('));
 
 				//  Remove prefixes, some common typos
@@ -380,7 +429,7 @@ function parseSpeeches ($url, $datum)
 						'dr.',
 						'mag.',
 
-						//  Tyops
+					//  Tyops
 						'podpredsendica',
 						'podpredsedik',
 						'predsednk',
@@ -390,16 +439,14 @@ function parseSpeeches ($url, $datum)
 				$name = str_ireplace ($replaces, '', $name);
 
 				$name = preg_replace ('/^(\.) ?/s', '', trim ($name));
-				$name = preg_replace ('/(\([A-Z]{2,}.*?\)\s?)\w/s', '', trim ($name)); // Removal of () in names
 				$name = str_replace ('  ', ' ', trim ($name));
-				//print_r ($name);
 
 				//	Remove some more trash
 				if (preg_match ('/REPUBLI|ODBOR|DRŽAVN|KOMISIJ|JAVNO|DRUŠTV|SINDIKA/s', $name)) continue;
 
 				$tmp = array (
-					'id' => getPersonIdByName ($name),
-					'ime' => $name
+						'id' => getPersonIdByName ($name),
+						'ime' => $name
 				);
 
 				// Preveri, če je pred tekstom še ime stranke v ()
@@ -426,10 +473,14 @@ function parseSpeeches ($url, $datum)
 	return $array;
 }
 
+/**
+ * Find votes on URL
+ *
+ * @param string $url URL to fetch
+ * @return array Array of votes
+ */
 function parseVotes ($url)
 {
-	global $people;
-
 	$array = array ();
 	$data = file_get_html ($url);
 
@@ -478,7 +529,8 @@ function parseVotes ($url)
 			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', $t->innertext, $matches)) {
 				unset ($matches[0]);
 				$matches[4] = getPersonIdByName (trim ($matches['1']), true);
-//				$matches[5] = $people[$matches[4]]['name'];	// test
+				//  Test
+				//$matches[5] = $people[$matches[4]]['name'];
 				$array['votes'][] = $matches;
 			}
 		}
@@ -488,6 +540,12 @@ function parseVotes ($url)
 	return $array;
 }
 
+/**
+ * Find documents on URL
+ *
+ * @param string $url URL to fetch
+ * @return array Array of documents
+ */
 function parseDocument ($url)
 {
 	$array = array ();
@@ -526,6 +584,12 @@ function parseDocument ($url)
 	return $array;
 }
 
+/**
+ * Save session to database
+ *
+ * @param array $session Session data
+ * @param int $organization_id Organization ID
+ */
 function saveSession ($session, $organization_id = 95)
 {
 	global $conn;
@@ -645,6 +709,7 @@ function saveSession ($session, $organization_id = 95)
 			";
 			pg_query ($conn, $sql);
 
+			//  Download documents
 			if (DOC_DOWNLOAD) {
 				file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
 			}
@@ -652,6 +717,12 @@ function saveSession ($session, $organization_id = 95)
 	}
 }
 
+/**
+ * Add a person to database
+ *
+ * @param string $name Name
+ * @return int Person's ID
+ */
 function addPerson ($name)
 {
 	global $conn, $people;
@@ -676,6 +747,13 @@ function addPerson ($name)
 	return 0;
 }
 
+/**
+ * Translate string to ascii
+ *
+ * @param string $str String to change
+ * @param string $delimiter Whitespace delimiter
+ * @return mixed|string Ascii translated string
+ */
 function toAscii ($str, $delimiter='-') {
 	$clean = iconv('UTF-8', 'ASCII//TRANSLIT', $str);
 	$clean = preg_replace("/[^a-zA-Z0-9\/_|+ -]/", '', $clean);
@@ -685,6 +763,11 @@ function toAscii ($str, $delimiter='-') {
 	return $clean;
 }
 
+/**
+ * Simple Logger
+ *
+ * @param string $message Message to log
+ */
 function logger ($message)
 {
 	error_log (date('D, d M Y H:i:s') . ' - ' . $message . "\n", 3, LOG_PATH);

@@ -1,10 +1,14 @@
 <?php
 
 /**
- * Parlameter Parser
- * by Marko Bratkovič, 2015
- * This is NOT opensource, it's beer source - you take something you gimme a beer
+ * Parser. Yes, it's what this is. It parses stuff. Pretty impressive, I know. It crawls pages from a wonderful website
+ * of Slovenian Government, finds data about eeeeeeverything our MPs do.
  *
+ * @package    Parlaparser
+ * @author     Marko Bratkovič <marko@example.com>
+ * @copyright  1997-2005 The PHP Group
+ * @license    http://www.php.net/license/3_01.txt  PHP License 3.01
+ * @version    Release: 1.0
  */
 
 //	Env settings
@@ -18,23 +22,26 @@ define ('LOG_PATH', 'log/errors.txt');
 include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
+//  Download attached documents
 define ('DOC_DOWNLOAD',	false);
+
+//  Downloads location
 define ('DOC_LOCATION',	'doc/');
+
+//  Skip session if any draft is found
 define ('SKIP_WHEN_REVIEWS',	false);
 
-//	DB settings
+define ('DT_CLASSIF',   ['s']);
+
+//	Database settings
 define ('PG_HOST',	'localhost');
 define ('PG_PORT',	5432);
 define ('PG_USER',	'postgres');
 define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'p5');
+define ('PG_NAME',	'database');
 
-//define ('PG_HOST',	'192.168.1.8');
-//define ('PG_PORT',	5432);
-//define ('PG_USER',	'muki');
-//define ('PG_PASS',	'');
-//define ('PG_NAME',	'muki');
-
+//  Source URL
+define ('DZ_URL',	'http://www.dz-rs.si');
 
 //	Session setting
 define ('CURRENT_SESSION', 'VII');

@@ -1,13 +1,8 @@
 <?php
 
 /**
- * Parlameter Parser
- * by Marko Bratkovič, 2015
- * This is NOT opensource, it's beer source - you take something you gimme a beer
- *
+ * Parlaparser
  */
-//echo levenshtein (mb_strtolower ('MIRIJAM BON KLANJŠČEK', 'UTF-8'), mb_strtolower ('MIRJAM BON KLANJŠČEK', 'UTF-8'), 1, 1, 1);
-//exit();
 include_once ('inc/config.php');
 
 // Get people array
