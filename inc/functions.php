@@ -677,13 +677,15 @@ function saveSession ($session, $organization_id = 95)
 				$insert_row = pg_fetch_row ($result);
 				$motion_id = $insert_row[0];
 
+				$faza = (!empty ($array['faza'])) ? $array['faza'] : '-';
+
 				//	Parse votes etc.
 				$sql = "
 					INSERT INTO
 						parladata_vote
-					(created_at, updated_at, name, motion_id, organization_id, session_id, start_time)
+					(created_at, updated_at, name, motion_id, organization_id, session_id, start_time, result)
 					VALUES
-					(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "')
+					(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "', '" . $faza . "')
 					RETURNING id
 				";
 				$result = pg_query ($conn, $sql);
