@@ -42,13 +42,19 @@ function getPersonOrganization ($person_id)
 
 	$sql = "
 		SELECT
-			organization_id
+			m.organization_id,
+            CASE WHEN o.classification = 'poslanska skupina' THEN 1 ELSE 0 END AS clas
 		FROM
-			parladata_membership
+			parladata_membership m
+		LEFT JOIN
+            parladata_organization o
+            ON
+			o.id = m.organization_id
 		WHERE
-			person_id = '" . (int)$person_id . "'
+			m.person_id = '" . (int)$person_id . "'
 		ORDER BY
-			id DESC
+			clas DESC,
+			m.id DESC
 		LIMIT 1
 	";
 	$result = pg_query ($conn, $sql);
