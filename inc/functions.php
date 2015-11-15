@@ -43,7 +43,7 @@ function getPersonOrganization ($person_id)
 	$sql = "
 		SELECT
 			m.organization_id,
-            CASE WHEN o.classification = 'poslanska skupina' THEN 1 ELSE 0 END AS clas
+            CASE WHEN o.classification IN ('poslanska skupina','nepovezani poslanec') THEN 1 ELSE 0 END AS clas
 		FROM
 			parladata_membership m
 		LEFT JOIN
