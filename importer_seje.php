@@ -24,3 +24,6 @@ $urls = array (
 
 // Jože požen
 parseSessions ($urls, 95);
+
+// Do things on end
+parserShutdown();
