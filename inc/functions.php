@@ -336,7 +336,7 @@ function parseSessions ($urls, $organization_id, $dt = false)
 		//	Retreive number of pages
 		preg_match('/Page 1 of (\d+)/i', $base, $matchesp);
 
-		if ((int)$matchesp[1] > 1) {
+		if (!empty($matchesp[1]) && (int)$matchesp[1] > 1) {
 
 			for ($i = 2; $i <= (int)$matchesp[1]; $i++) {
 				//	Get next page
@@ -624,7 +624,7 @@ function parseDocument ($url)
 function saveSession ($session, $organization_id = 95)
 {
 	global $conn;
-
+print_r($session);exit();
 	$sql = "
 		INSERT INTO
 			parladata_session
