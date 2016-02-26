@@ -638,6 +638,8 @@ function saveSession ($session, $organization_id = 95)
 		$insert_row = pg_fetch_row ($result);
 		$session_id = $insert_row[0];
 
+		define('ON_IMPORT_EXEC', $session['date']);
+
 		//	Save speeches
 		foreach ($session['speeches'] as $speech_date => $speech) {
 			$order = 0;
@@ -809,3 +811,75 @@ function logger ($message)
 	if (LOGGING)
 		error_log (date('D, d M Y H:i:s') . ' - ' . $message . "\n", 3, LOG_PATH);
 }
+
+/**
+ * Shitdown events
+ */
+function parserShutdown ()
+{
+	if (ON_IMPORT_EXEC && ON_IMPORT_EXEC_SCRIPT) exec(ON_IMPORT_EXEC_SCRIPT);
+}
+
+
+/* TAGS SECTION */
+
+/**
+ * Get all Tags
+ * @return array of available tags
+ */
+function getTags ()
+{
+	global $conn;
+
+	$array = array ();
+	$sql = "
+		SELECT
+			*
+		FROM
+			taggit_tag
+	";
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		while ($row = pg_fetch_assoc($result)) {
+			$array[$row['id']] = $row;
+		}
+	}
+	return $array;
+}
+
+/**
+ * Get all votes with tags
+ */
+function getAllVotes()
+{
+	global $conn;
+
+	$array = array ();
+	$sql = "
+		SELECT
+			pv.id,
+			pv.name,
+			pv.start_time,
+			array_to_string(array_agg(t.id), ',') AS tags
+		FROM
+			parladata_vote pv
+		LEFT JOIN
+			taggit_taggeditem t
+			ON
+			t.object_id = pv.id
+			AND
+			t.content_type_id = 22
+		GROUP BY
+			pv.id
+		ORDER BY
+			pv.start_time DESC
+	";
+	$result = pg_query ($conn, $sql);
+	if ($result) {
+		while ($row = pg_fetch_assoc($result)) {
+			$array[$row['id']] = $row;
+		}
+	}
+	return $array;
+}
+

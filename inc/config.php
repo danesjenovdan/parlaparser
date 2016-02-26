@@ -29,6 +29,12 @@ define ('DOC_DOWNLOAD',	false);
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'doc/');
 
+//  [SETTING] Execute script after finish - checks for inserts
+define ('ON_IMPORT_EXEC', false);
+
+//  [SETTING] Execute script after finish - script to execute using exec() function. Careful!
+define ('ON_IMPORT_EXEC_SCRIPT', '');
+
 //  [SETTING] Skip session if any draft message is found
 define ('SKIP_WHEN_REVIEWS', false);
 

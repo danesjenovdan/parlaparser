@@ -21,3 +21,6 @@ $url_root = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbrano
 
 // Jože požen
 parseSessionsDT ($url_root);
+
+// Do things on end
+parserShutdown();
