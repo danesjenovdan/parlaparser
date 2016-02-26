@@ -24,10 +24,10 @@ include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
 //  [SETTING] Download attached documents
-define ('DOC_DOWNLOAD',	false);
+define ('DOC_DOWNLOAD',	true);
 
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
-define ('DOC_LOCATION',	'doc/');
+define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/documents/');
 
 //  [SETTING] Execute script after finish - checks for inserts
 define ('ON_IMPORT_EXEC', false);
