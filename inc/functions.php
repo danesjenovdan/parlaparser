@@ -624,7 +624,7 @@ function parseDocument ($url)
 function saveSession ($session, $organization_id = 95)
 {
 	global $conn;
-print_r($session);exit();
+
 	$sql = "
 		INSERT INTO
 			parladata_session
