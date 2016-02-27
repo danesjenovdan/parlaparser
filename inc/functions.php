@@ -103,6 +103,7 @@ function getPersonIdByName ($name)
 	global $people;
 
 	$tmparr = array ();
+
 	foreach ($people as $key => $item) {
 
 		$namelist = preg_split ('/,/i', $item['name_parser']);
@@ -141,6 +142,8 @@ function parseSessionsList ($content, $organization_id)
 	$islist = $data->find('table.dataTableExHov', 0);
 	if (!empty ($islist)) {
 		$content = $data->find('table.dataTableExHov', 0)->find ('tbody a.outputLink');
+	} else {
+		return false;
 	}
 
 	foreach ($content as $link) {
@@ -176,34 +179,30 @@ function parseSessionsList ($content, $organization_id)
 			logger ('FETCH SESSION: ' . DZ_URL . $session_link);
 
 			// Get session
-			$session = file_get_html (DZ_URL . $session_link);
+			$session_link = str_replace('&amp;', '&', $session_link); // Some weird shit changed recently on DZRS server
+			$session = file_get_html(DZ_URL . $session_link);
 
 			// Parse data
 			$tmp['speeches'] = array ();
 			if (PARSE_SPEECHES) {
-				$sparea = $session->find ('span.outputText');
-				foreach ($sparea as $sp) {
-					if ($sp->innerText() == '<h3>Zapisi seje</h3>') {
-						$sptable = $sp->parent()->find('a.outputLink');
+				if ($session->find('td.vaTop', 3)) {
+					$sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
 
-						if (!empty ($sptable)) {
-							foreach ($sptable as $speeches) {
-								if (stripos ($speeches->innerText(), "pregled") === false) {
-									$datum = '';
-									if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
-										$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
-									}
-									$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
-									$tmp['speeches'][$speech['datum']] = $speech;
-
-								} else {
-									if (SKIP_WHEN_REVIEWS) continue 3;
+					if (!empty ($sptable)) {
+						foreach ($sptable as $speeches) {
+							if (stripos ($speeches->innerText(), "pregled") === false) {
+								$datum = '';
+								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
 								}
+								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
+								$tmp['speeches'][$speech['datum']] = $speech;
+
+							} else {
+								if (SKIP_WHEN_REVIEWS) continue 2;
 							}
 						}
-						break;
 					}
-
 				}
 			}
 
@@ -243,8 +242,8 @@ function parseSessionsList ($content, $organization_id)
 			}
 
 			//	Test: Izpis podatkov celotne seje
-			//print_r ($tmp);
-			//exit();
+			print_r ($tmp);
+			exit();
 
 			//	Add to DB
 			saveSession ($tmp, $organization_id);
@@ -325,7 +324,9 @@ function parseSessions ($urls, $organization_id, $dt = false)
 		$cookiess = substr ($cookiess, 0, -2);
 
 		//  Search on DT page or not TODO: better solution needed
-		$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1042_';
+		//$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1040_';
+		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
+		$form_id = $fmatches[1];
 
 		//	Retreive pager form action
 		preg_match('/form id="' . $form_id . ':sf:form1".*?action="(.*?)"/', $base, $matches);
@@ -376,20 +377,20 @@ function parseSessions ($urls, $organization_id, $dt = false)
  */
 function parseSpeeches ($url, $datum)
 {
-	$data = file_get_html ($url);
+	$data = file_get_html (str_replace('&amp;', '&', $url));
 
 	// Log
 	logger ('FETCH SPEECH: ' . $url);
 
 	// Info
 	$array = [
-			'naziv' => ($dtit = $data->find('.wpsPortletBody table tr', 1)) ? $dtit->find('td', 1)->text() : 'Ni naziva',
-			'datum'	=> $datum,	// $data->find('.wpsPortletBody table tr', 2)->find('td', 1)->text()
+			'naziv' => ($dtit = $data->find('.wpthemeOverflowAuto table tr', 0)) ? $dtit->find('td', 1)->text() : 'Ni naziva',
+			'datum'	=> $datum,	// $data->find('.wpthemeOverflowAuto table tr', 2)->find('td', 1)->text()
 			'talks'	=> []
 	];
 
 	// Data
-	$content = $data->find('fieldset', 0)->find('span.outputText', 1);
+	$content = $data->find('.fieldset', 0)->find('span.outputText', 0);
 	$content = html_entity_decode ($content->innertext);
 	$content = strip_tags($content, '<br><b>');
 
@@ -501,7 +502,8 @@ function parseSpeeches ($url, $datum)
 function parseVotes ($url)
 {
 	$array = array ();
-	$data = file_get_html ($url);
+
+	$data = file_get_html (str_replace('&amp;', '&', $url));
 
 	// Log
 	logger ('FETCH VOTES: ' . $url);
@@ -540,15 +542,13 @@ function parseVotes ($url)
 		}
 	}
 
-	$content = $data->find('fieldset', 0)->find('span.outputText');
-	if (!empty ($content[1]))
-		$content = $content[1];
+	$content = $data->find('.fieldset', 0)->find('span.outputText', 0);
 
 	$cnt = 0;
 	$array['votes'] = array ();
 	foreach ($content->find('tr') as $t) {
 		if ($cnt > 0) {
-			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', $t->innertext, $matches)) {
+			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', $name = html_entity_decode($t->innertext), $matches)) {
 				unset ($matches[0]);
 				$matches[4] = getPersonIdByName (trim ($matches['1']), true);
 				//  Test
@@ -625,6 +625,8 @@ function saveSession ($session, $organization_id = 95)
 {
 	global $conn;
 
+	if (empty($session['speeches'])) return false;
+
 	$sql = "
 		INSERT INTO
 			parladata_session
@@ -638,7 +640,7 @@ function saveSession ($session, $organization_id = 95)
 		$insert_row = pg_fetch_row ($result);
 		$session_id = $insert_row[0];
 
-		define('ON_IMPORT_EXEC', $session['date']);
+//		define('ON_IMPORT_EXEC', $session['date']);
 
 		//	Save speeches
 		foreach ($session['speeches'] as $speech_date => $speech) {

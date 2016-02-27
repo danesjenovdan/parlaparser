@@ -24,7 +24,7 @@ include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
 //  [SETTING] Download attached documents
-define ('DOC_DOWNLOAD',	true);
+define ('DOC_DOWNLOAD',	false);
 
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/documents/');
@@ -48,11 +48,11 @@ define ('PARSE_VOTES', true);
 define ('PARSE_DOCS', true);
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'192.168.110.31');
+define ('PG_HOST',	'127.0.0.1');
 define ('PG_PORT',	5432);
-define ('PG_USER',	'parladaddy');
-define ('PG_PASS',	'razvrat');
-define ('PG_NAME',	'parladata');
+define ('PG_USER',	'postgres');
+define ('PG_PASS',	'postgres');
+define ('PG_NAME',	'p1');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
