@@ -345,9 +345,9 @@ function parseSessions ($urls, $organization_id, $dt = false)
 						array(
 								$form_id . ':sf:form1' => $form_id . ':sf:form1',
 								$form_id . ':sf:form1:menu1' => CURRENT_SESSION,
-								$form_id . ':sf:form1:button2' => 'Išči seje',
-								$form_id . ':sf:form1:tableEx1:deluxe1__pagerNext.x' => 1,
-								$form_id . ':sf:form1:tableEx1:goto1__pagerGoText' => ($i - 1),
+								$form_id . ':sf:form1:tableEx1:goto1__pagerGoButton.x' => 1,
+								$form_id . ':sf:form1:tableEx1:goto1__pagerGoText' => $i,
+								$form_id . ':sf:form1_SUBMIT' => 1,
 								'javax.faces.ViewState' => $matchess[1]
 						)
 				);
