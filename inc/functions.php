@@ -604,8 +604,9 @@ function parseDocument ($url)
 
 					$filet = file_get_contents ($matches[1]);
 					if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
-						$array['filename'] = $tdinfo;
+						$array['filename_orig'] = $tdinfo;
 						$array['link'] = $matches2[1];
+						$array['filename'] = substr($array['link'], strrpos($array['link'], '/') + 1);
 					}
 				}
 
