@@ -10,7 +10,7 @@
  */
 
 //	Env settings
-ini_set ('max_execution_time', 3600);
+ini_set ('max_execution_time', 7200);
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
@@ -30,7 +30,7 @@ define ('DOC_DOWNLOAD',	false);
 define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/documents/');
 
 //  [SETTING] Execute script after finish - script to execute using exec() function. Careful!
-define ('ON_IMPORT_EXEC_SCRIPT', '');
+define ('ON_IMPORT_EXEC_SCRIPT', ''); // it uses sprintf() with $_global_oldest_date as second variable
 $_global_oldest_date = null;
 
 //  [SETTING] Skip session if any draft message is found
@@ -50,7 +50,7 @@ define ('PG_HOST',	'127.0.0.1');
 define ('PG_PORT',	5432);
 define ('PG_USER',	'postgres');
 define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'p1');
+define ('PG_NAME',	'p2');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
