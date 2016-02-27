@@ -553,7 +553,7 @@ function parseVotes ($url)
 	$array['votes'] = array ();
 	foreach ($content->find('tr') as $t) {
 		if ($cnt > 0) {
-			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', $name = html_entity_decode($t->innertext), $matches)) {
+			if (preg_match ('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', html_entity_decode($t->innertext), $matches)) {
 				unset ($matches[0]);
 				$matches[4] = getPersonIdByName (trim ($matches['1']), true);
 				//  Test
@@ -660,7 +660,7 @@ function saveSession ($session, $organization_id = 95)
 				parladata_session
 			(created_at, updated_at, name, gov_id, organization_id, start_time, in_review)
 			VALUES
-			(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (bool)$session['review'] . "')
+			(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (int)(bool)$session['review'] . "')
 			RETURNING id
 		";
 		$result = pg_query ($conn, $sql);
