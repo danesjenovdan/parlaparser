@@ -620,7 +620,7 @@ function parseDocument ($url)
  */
 function saveSession ($session, $organization_id = 95)
 {
-	global $conn;
+	global $conn, $_global_oldest_date;
 
 	if (empty($session['speeches'])) return false;
 
@@ -637,7 +637,7 @@ function saveSession ($session, $organization_id = 95)
 		$insert_row = pg_fetch_row ($result);
 		$session_id = $insert_row[0];
 
-//		define('ON_IMPORT_EXEC', $session['date']);
+		$_global_oldest_date = $session['date'];
 
 		//	Save speeches
 		foreach ($session['speeches'] as $speech_date => $speech) {
@@ -816,7 +816,9 @@ function logger ($message)
  */
 function parserShutdown ()
 {
-	if (ON_IMPORT_EXEC && ON_IMPORT_EXEC_SCRIPT) exec(ON_IMPORT_EXEC_SCRIPT);
+	global $_global_oldest_date;
+
+	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
 
