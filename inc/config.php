@@ -10,7 +10,7 @@
  */
 
 //	Env settings
-ini_set ('max_execution_time', 3600);
+ini_set ('max_execution_time', 7200);
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
@@ -29,11 +29,9 @@ define ('DOC_DOWNLOAD',	true);
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/v1/dokumenti/');
 
-//  [SETTING] Execute script after finish - checks for inserts
-define ('ON_IMPORT_EXEC', false);
-
 //  [SETTING] Execute script after finish - script to execute using exec() function. Careful!
-define ('ON_IMPORT_EXEC_SCRIPT', '');
+define ('ON_IMPORT_EXEC_SCRIPT', ''); // it uses sprintf() with $_global_oldest_date as second variable
+$_global_oldest_date = null;
 
 //  [SETTING] Skip session if any draft message is found
 define ('SKIP_WHEN_REVIEWS', false);
