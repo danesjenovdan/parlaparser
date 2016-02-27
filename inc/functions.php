@@ -242,8 +242,8 @@ function parseSessionsList ($content, $organization_id)
 			}
 
 			//	Test: Izpis podatkov celotne seje
-			print_r ($tmp);
-			exit();
+//			print_r ($tmp);
+//			exit();
 
 			//	Add to DB
 			saveSession ($tmp, $organization_id);
