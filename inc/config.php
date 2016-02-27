@@ -24,7 +24,7 @@ include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
 //  [SETTING] Download attached documents
-define ('DOC_DOWNLOAD',	true);
+define ('DOC_DOWNLOAD',	false);
 
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/v1/dokumenti/');
