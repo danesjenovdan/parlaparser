@@ -183,28 +183,28 @@ function parseSessionsList ($content, $organization_id)
 			$session = file_get_html(DZ_URL . $session_link);
 
 			// Parse data
-//			$tmp['speeches'] = array ();
-//			if (PARSE_SPEECHES) {
-//				if ($session->find('td.vaTop', 3)) {
-//					$sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
-//
-//					if (!empty ($sptable)) {
-//						foreach ($sptable as $speeches) {
-//							if (stripos ($speeches->innerText(), "pregled") === false) {
-//								$datum = '';
-//								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
-//									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
-//								}
-//								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
-//								$tmp['speeches'][$speech['datum']] = $speech;
-//
-//							} else {
-//								if (SKIP_WHEN_REVIEWS) continue 2;
-//							}
-//						}
-//					}
-//				}
-//			}
+			$tmp['speeches'] = array ();
+			if (PARSE_SPEECHES) {
+				if ($session->find('td.vaTop', 3)) {
+					$sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
+
+					if (!empty ($sptable)) {
+						foreach ($sptable as $speeches) {
+							if (stripos ($speeches->innerText(), "pregled") === false) {
+								$datum = '';
+								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
+								}
+								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
+								$tmp['speeches'][$speech['datum']] = $speech;
+
+							} else {
+								if (SKIP_WHEN_REVIEWS) continue 2;
+							}
+						}
+					}
+				}
+			}
 
 			// Parse documents
 			$tmp['documents'] = array ();
@@ -224,27 +224,8 @@ function parseSessionsList ($content, $organization_id)
 						}
 					}
 				}
-
-//				$docarea = $session->find('span.outputText');
-//				foreach ($docarea as $sp) {
-//					if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
-//						$doctable = $sp->parent()->next_sibling()->find('a');
-//						if (!empty ($doctable)) {
-//							foreach ($doctable as $doc) {
-//								if (stripos($doc->innerText(), "pregled") === false) {
-//									$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
-//
-//								} else {
-//									if (SKIP_WHEN_REVIEWS) continue 3;
-//								}
-//							}
-//						}
-//						break;
-//					}
-//				}
 			}
-			print_R($tmp);
-exit();
+
 			// Parse voting data
 			$tmp['voting'] = array ();
 			if (PARSE_VOTES) {
