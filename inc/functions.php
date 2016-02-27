@@ -177,7 +177,6 @@ function parseSessionsList ($content, $organization_id)
 
 			// Check if session already imported
 			if ($exists = sessionExists ($session_nouid)) {
-//				die(print_r($exists, true));
 				if ($exists['in_review'] == 'f') continue;
 				$tmp['id'] = $exists['id']; // Set that session exists
 				$tmp['review_ext'] = true;
@@ -456,6 +455,7 @@ function parseSpeeches ($url, $datum)
 
 					//  Tyops
 						'podpredsendica',
+						'podpredsedica',
 						'podpredsedik',
 						'predsednk',
 						'predsedik',
