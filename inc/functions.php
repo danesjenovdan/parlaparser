@@ -77,7 +77,8 @@ function sessionExists ($session_id)
 
 	$sql = "
 		SELECT
-			*
+			id,
+			in_review
 		FROM
 			parladata_session
 		WHERE
@@ -86,7 +87,7 @@ function sessionExists ($session_id)
 	$result = pg_query ($conn, $sql);
 	if ($result) {
 		if (pg_num_rows ($result) > 0) {
-			return true;
+			return pg_fetch_assoc($result);
 		}
 	}
 	return false;
@@ -167,13 +168,20 @@ function parseSessionsList ($content, $organization_id)
 				'name'		=> trim ($session_name),
 				'link'		=> trim ($session_link),
 				'link_noid'	=> trim ($session_nouid),
-				'date'		=> trim ($session_date)
+				'date'		=> trim ($session_date),
+				'review'    => false,
+				'review_ext'=> false
 		);
 
 		if ($date < new DateTime('NOW')) {
 
 			// Check if session already imported
-			if (sessionExists ($session_nouid)) continue;
+			if ($exists = sessionExists ($session_nouid)) {
+//				die(print_r($exists, true));
+				if ($exists['in_review'] == 'f') continue;
+				$tmp['id'] = $exists['id']; // Set that session exists
+				$tmp['review_ext'] = true;
+			}
 
 			// Log
 			logger ('FETCH SESSION: ' . DZ_URL . $session_link);
@@ -190,17 +198,17 @@ function parseSessionsList ($content, $organization_id)
 
 					if (!empty ($sptable)) {
 						foreach ($sptable as $speeches) {
-							if (stripos ($speeches->innerText(), "pregled") === false) {
-								$datum = '';
-								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
-									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
-								}
-								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
-								$tmp['speeches'][$speech['datum']] = $speech;
+							$in_review = (bool)(stripos ($speeches->innerText(), "pregled") !== false);
+							if ($in_review && SKIP_WHEN_REVIEWS) continue 2;
 
-							} else {
-								if (SKIP_WHEN_REVIEWS) continue 2;
+							if ($in_review) $tmp['review'] = true;
+
+							$datum = '';
+							if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+								$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
 							}
+							$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
+							$tmp['speeches'][$speech['datum']] = $speech;
 						}
 					}
 				}
@@ -209,7 +217,6 @@ function parseSessionsList ($content, $organization_id)
 			// Parse documents
 			$tmp['documents'] = array ();
 			if (PARSE_DOCS) {
-
 				if ($session->find('td.vaTop', 3)) {
 					$doctable = $session->find('td.vaTop', 2)->find('a');
 
@@ -382,7 +389,7 @@ function parseSpeeches ($url, $datum)
 
 	// Info
 	$array = [
-			'naziv' => ($dtit = $data->find('.wpthemeOverflowAuto table tr', 0)) ? $dtit->find('td', 1)->text() : 'Ni naziva',
+			'naziv' => ($dtit = $data->find('.wpthemeOverflowAuto table tr', 0)) ? html_entity_decode($dtit->find('td', 1)->text()) : 'Ni naziva',
 			'datum'	=> $datum,	// $data->find('.wpthemeOverflowAuto table tr', 2)->find('td', 1)->text()
 			'talks'	=> []
 	];
@@ -512,10 +519,10 @@ function parseVotes ($url)
 			$tdinfo = trim($td->text());
 
 			if (strtolower($tdinfo) == 'naslov:') {
-				$array['naslov'] = trim ($td->next_sibling ()->text());
+				$array['naslov'] = html_entity_decode(trim ($td->next_sibling ()->text()));
 			}
 			if (strtolower($tdinfo) == 'dokument:') {
-				$array['dokument'] = trim ($td->next_sibling ()->text());
+				$array['dokument'] = html_entity_decode(trim ($td->next_sibling ()->text()));
 			}
 			if (strtolower($tdinfo) == 'glasovanje dne:' && preg_match ('/([0-9\.]{10}).*?([0-9\:]{8})/is', $td->next_sibling ()->text(), $tmp)) {
 				$array['date'] = DateTime::createFromFormat ('d.m.Y', $tmp[1])->format ('Y-m-d');
@@ -620,50 +627,79 @@ function parseDocument ($url)
  */
 function saveSession ($session, $organization_id = 95)
 {
-	global $conn;
+	global $conn, $_global_oldest_date;
 
 	if (empty($session['speeches'])) return false;
 
-	$sql = "
-		INSERT INTO
-			parladata_session
-		(created_at, updated_at, name, gov_id, organization_id, start_time)
-		VALUES
-		(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "')
-		RETURNING id
-	";
-	$result = pg_query ($conn, $sql);
-	if (pg_affected_rows ($result) > 0) {
-		$insert_row = pg_fetch_row ($result);
-		$session_id = $insert_row[0];
-
-//		define('ON_IMPORT_EXEC', $session['date']);
-
-		//	Save speeches
-		foreach ($session['speeches'] as $speech_date => $speech) {
-			$order = 0;
-			foreach ($speech['talks'] as $talk) {
-				$order+=10;
-
-				if ($talk['id'] == 0) {
-					$person_id = addPerson ($talk['ime']);
-					if (!empty ($person_id)) {
-						$talk['id'] = $person_id;
-					} else {
-						continue;
-					}
-				}
-
-				$sql = "
-					INSERT INTO
-						parladata_speech
-					(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id)
-					VALUES
-					(NOW(), NOW(), '" . pg_escape_string ($conn, $talk['id']) . "', '" . pg_escape_string ($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization ($talk['id']) . "')
-				";
-				pg_query ($conn, $sql);
-			}
+	if (!empty($session['id'])) {
+		if ($session['review_ext'] == 1 && $session['review'] == 0) {
+			$sql = "
+				UPDATE
+					parladata_session
+				SET
+					in_review = 0
+				WHERE
+					id = " . (int)$session['id'];
+			pg_query ($conn, $sql);
 		}
+
+		$session_id = $session['id'];
+
+		$sql = "
+			DELETE FROM
+				parladata_speech
+			WHERE
+				session_id = '" . (int)$session_id . "'
+		";
+		pg_query ($conn, $sql);
+
+	} else {
+		$sql = "
+			INSERT INTO
+				parladata_session
+			(created_at, updated_at, name, gov_id, organization_id, start_time, in_review)
+			VALUES
+			(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (bool)$session['review'] . "')
+			RETURNING id
+		";
+		$result = pg_query ($conn, $sql);
+		if (pg_affected_rows ($result) > 0) {
+			$insert_row = pg_fetch_row($result);
+			$session_id = $insert_row[0];
+		} else {
+			return false;
+		}
+	}
+
+	$_global_oldest_date = $session['date'];
+
+	//	Save speeches
+	foreach ($session['speeches'] as $speech_date => $speech) {
+		$order = 0;
+		foreach ($speech['talks'] as $talk) {
+			$order+=10;
+
+			if ($talk['id'] == 0) {
+				$person_id = addPerson ($talk['ime']);
+				if (!empty ($person_id)) {
+					$talk['id'] = $person_id;
+				} else {
+					continue;
+				}
+			}
+
+			$sql = "
+				INSERT INTO
+					parladata_speech
+				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id)
+				VALUES
+				(NOW(), NOW(), '" . pg_escape_string ($conn, $talk['id']) . "', '" . pg_escape_string ($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization ($talk['id']) . "')
+			";
+			pg_query ($conn, $sql);
+		}
+	}
+
+	if (empty($session['id'])) {
 
 		//	Save votes
 		foreach ($session['voting'] as $voting) {
@@ -816,7 +852,9 @@ function logger ($message)
  */
 function parserShutdown ()
 {
-	if (ON_IMPORT_EXEC && ON_IMPORT_EXEC_SCRIPT) exec(ON_IMPORT_EXEC_SCRIPT);
+	global $_global_oldest_date;
+
+	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
 
