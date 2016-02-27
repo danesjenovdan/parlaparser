@@ -183,20 +183,40 @@ function parseSessionsList ($content, $organization_id)
 			$session = file_get_html(DZ_URL . $session_link);
 
 			// Parse data
-			$tmp['speeches'] = array ();
-			if (PARSE_SPEECHES) {
-				if ($session->find('td.vaTop', 3)) {
-					$sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
+//			$tmp['speeches'] = array ();
+//			if (PARSE_SPEECHES) {
+//				if ($session->find('td.vaTop', 3)) {
+//					$sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
+//
+//					if (!empty ($sptable)) {
+//						foreach ($sptable as $speeches) {
+//							if (stripos ($speeches->innerText(), "pregled") === false) {
+//								$datum = '';
+//								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
+//									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
+//								}
+//								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
+//								$tmp['speeches'][$speech['datum']] = $speech;
+//
+//							} else {
+//								if (SKIP_WHEN_REVIEWS) continue 2;
+//							}
+//						}
+//					}
+//				}
+//			}
 
-					if (!empty ($sptable)) {
-						foreach ($sptable as $speeches) {
-							if (stripos ($speeches->innerText(), "pregled") === false) {
-								$datum = '';
-								if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
-									$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
-								}
-								$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
-								$tmp['speeches'][$speech['datum']] = $speech;
+			// Parse documents
+			$tmp['documents'] = array ();
+			if (PARSE_DOCS) {
+
+				if ($session->find('td.vaTop', 3)) {
+					$doctable = $session->find('td.vaTop', 2)->find('a');
+
+					if (!empty ($doctable)) {
+						foreach ($doctable as $doc) {
+							if (stripos($doc->innerText(), "pregled") === false) {
+								$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
 
 							} else {
 								if (SKIP_WHEN_REVIEWS) continue 2;
@@ -204,30 +224,27 @@ function parseSessionsList ($content, $organization_id)
 						}
 					}
 				}
+
+//				$docarea = $session->find('span.outputText');
+//				foreach ($docarea as $sp) {
+//					if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
+//						$doctable = $sp->parent()->next_sibling()->find('a');
+//						if (!empty ($doctable)) {
+//							foreach ($doctable as $doc) {
+//								if (stripos($doc->innerText(), "pregled") === false) {
+//									$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
+//
+//								} else {
+//									if (SKIP_WHEN_REVIEWS) continue 3;
+//								}
+//							}
+//						}
+//						break;
+//					}
+//				}
 			}
-
-			// Parse documents
-			$tmp['documents'] = array ();
-			if (PARSE_DOCS) {
-				$docarea = $session->find('span.outputText');
-				foreach ($docarea as $sp) {
-					if ($sp->innerText() == '<h3>Dokumenti seje</h3>') {
-						$doctable = $sp->parent()->next_sibling()->find('a');
-						if (!empty ($doctable)) {
-							foreach ($doctable as $doc) {
-								if (stripos($doc->innerText(), "pregled") === false) {
-									$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
-
-								} else {
-									if (SKIP_WHEN_REVIEWS) continue 3;
-								}
-							}
-						}
-						break;
-					}
-				}
-			}
-
+			print_R($tmp);
+exit();
 			// Parse voting data
 			$tmp['voting'] = array ();
 			if (PARSE_VOTES) {
@@ -571,27 +588,26 @@ function parseVotes ($url)
 function parseDocument ($url)
 {
 	$array = array ();
-	$data = file_get_html ($url);
+	$data = file_get_html (str_replace('&amp;', '&', $url));
 
 	// Log
 	logger ('FETCH DOC: ' . $url);
 
-	$info = $data->find('.wpsPortletBody form table tr');
+	$info = $data->find('.wpthemeOverflowAuto form table tr');
 	foreach ($info as $key => $item) {
 		if (stripos ($item->text(), 'Polni nazi') !== false) {
-			$array['session'] = $info[$key]->find('td', 1)->text();
+			$array['session'] = html_entity_decode($info[$key]->find('td', 1)->text());
 		}
 		if (stripos ($item->text(), 'Naslov dokumenta') !== false) {
-			$array['title'] = $info[$key]->find('td', 1)->text();
-		} else {
-			$array['title'] = 'Brez naziva';
+			$array['title'] = html_entity_decode($info[$key]->find('td', 1)->text());
 		}
 		if (stripos ($item->text(), 'Datum dokumenta') !== false) {
 			$array['date'] = DateTime::createFromFormat ('d.m.Y', trim ($info[$key]->find('td', 1)->text()))->format ('Y-m-d');
 		}
 	}
+	if (empty($array['title'])) $array['title'] = 'Brez naziva';
 
-	if ($files = $data->find('.panelGrid', 0)) {
+	if ($files = $data->find('.panelGrid', 1)) {
 		foreach ($files->find('tr') as $row) {
 			foreach ($row->find('td a') as $td) {
 				$tdinfo = trim($td->text());
