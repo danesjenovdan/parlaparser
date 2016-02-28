@@ -52,7 +52,7 @@ define ('PARSE_DOCS', true);
 define ('FETCH_TIMEOUT', 3);
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'***REMOVED***');gi
+define ('PG_HOST',	'***REMOVED***');
 define ('PG_PORT',	5432);
 define ('PG_USER',	'parladaddy');
 define ('PG_PASS',	'***REMOVED***');
