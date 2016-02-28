@@ -25,7 +25,7 @@ include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
 //  [SETTING] Download attached documents
-define ('DOC_DOWNLOAD',	true);
+define ('DOC_DOWNLOAD',	false);
 
 //  [SETTING] Downloads location ONLY IF ABOVE IS TRUE
 define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/v1/dokumenti/');
@@ -38,7 +38,7 @@ $_global_oldest_date = null;
 define ('SKIP_WHEN_REVIEWS', false);
 
 //  [SETTING] Want to recrawl speaches for sessions that were in review last time?
-define ('UPDATE_SESSIONS_IN_REVIEW', true);
+define ('UPDATE_SESSIONS_IN_REVIEW', false);
 
 //  [SETTING] Classifications for DTs
 $dtclassifs = ['odbor','komisija','kolegij'];
@@ -50,7 +50,7 @@ define ('PARSE_VOTES', true);
 define ('PARSE_DOCS', true);
 
 //  [SETTING] Optional delay between requests in seconds
-define ('FETCH_TIMEOUT', 1);
+define ('FETCH_TIMEOUT', 0);
 
 //	[SETTING] Database settings
 define ('PG_HOST',	'127.0.0.1');
