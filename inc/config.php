@@ -38,7 +38,7 @@ $_global_oldest_date = null;
 define ('SKIP_WHEN_REVIEWS', false);
 
 //  [SETTING] Want to recrawl speaches for sessions that were in review last time?
-define ('UPDATE_SESSIONS_IN_REVIEW', true);
+define ('UPDATE_SESSIONS_IN_REVIEW', false);
 
 //  [SETTING] Classifications for DTs
 $dtclassifs = ['odbor','komisija','kolegij'];
