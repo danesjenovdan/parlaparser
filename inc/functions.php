@@ -641,6 +641,8 @@ function saveSession ($session, $organization_id = 95)
 {
 	global $conn, $_global_oldest_date, $people;
 
+	// Log
+	logger ('SAVE SESSION');
 	if (empty($session['speeches'])) return false;
 
 	if (!empty($session['id'])) {
