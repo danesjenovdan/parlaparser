@@ -122,7 +122,7 @@ function getPersonIdByName ($name)
 
 	$num = current ($tmparr);
 
-	if ($num <= 6) {	//	Should work :)
+	if ($num <= 6 && !empty($people)) {	//	Should work :)
 		return key ($tmparr);	//	NAME: $people[key ($tmparr)]
 	} else {
 		return addPerson ($name);
@@ -137,6 +137,7 @@ function getPersonIdByName ($name)
  */
 function parseSessionsList ($content, $organization_id)
 {
+	global $benchmark;
 	$data = str_get_html ($content);
 
 	//	Check for single sessions
@@ -206,6 +207,7 @@ function parseSessionsList ($content, $organization_id)
 							if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
 								$datum = DateTime::createFromFormat ('d.m.Y', $matches[1])->format ('Y-m-d');
 							}
+
 							$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
 							$tmp['speeches'][$speech['datum']] = $speech;
 						}
@@ -213,7 +215,6 @@ function parseSessionsList ($content, $organization_id)
 				}
 			}
 
-			// Parse documents
 			$tmp['documents'] = array ();
 			if (PARSE_DOCS) {
 				if ($session->find('td.vaTop', 3)) {
@@ -381,6 +382,8 @@ function parseSessions ($urls, $organization_id, $dt = false)
  */
 function parseSpeeches ($url, $datum)
 {
+	global $benchmark;
+
 	$data = file_get_html (str_replace('&amp;', '&', $url));
 
 	// Log
@@ -434,6 +437,7 @@ function parseSpeeches ($url, $datum)
 		$end = sizeof ($parts);
 
 		for ($i = $cnt; $i <= $end; $i++) {
+
 			//	Iskanje osebe/imena
 			if (isset ($parts[$i]) && preg_match ('/^[A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{6,40}(\(.*?\))?/s', $parts[$i])) {
 
@@ -628,7 +632,7 @@ function parseDocument ($url)
  */
 function saveSession ($session, $organization_id = 95)
 {
-	global $conn, $_global_oldest_date;
+	global $conn, $_global_oldest_date, $people;
 
 	if (empty($session['speeches'])) return false;
 
@@ -814,7 +818,12 @@ function addPerson ($name)
 		$insert_row = pg_fetch_row ($result);
 		$person_id = $insert_row[0];
 
-		$people = getPeople ();
+		$people[$person_id] = array(
+			'id' => $person_id,
+			'name' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8"),
+			'name_parser' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")
+		);
+//		$people = getPeople ();
 
 		return $person_id;
 	}
