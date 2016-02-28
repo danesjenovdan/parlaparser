@@ -11,6 +11,7 @@
 
 //	Env settings
 ini_set ('max_execution_time', 7200);
+ini_set ('default_socket_timeout', 300);
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
