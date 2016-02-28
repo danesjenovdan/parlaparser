@@ -7,6 +7,7 @@ include_once ('inc/config.php');
 
 // Get people array
 $people = getPeople ();
+$people_new = array();
 
 // Which URLs to fetch
 $url_root = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbranoDt?idDT=';
