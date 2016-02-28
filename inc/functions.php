@@ -373,10 +373,11 @@ function parseSessions ($urls, $organization_id)
 						)
 				);
 				$context  = stream_context_create($opts);
-				$subpage = file_get_contents(DZ_URL . $matches[1], false, $context);
 
-				//	Parse sub page
-				parseSessionsList ($subpage, $organization_id);
+				if ($subpage = file_get_contents(DZ_URL . $matches[1], false, $context)) {
+					//	Parse sub page
+					parseSessionsList ($subpage, $organization_id);
+				}
 			}
 
 		}
