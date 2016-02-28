@@ -305,7 +305,7 @@ function parseSessionsDT ($url)
 	foreach ($dts as $gov_key => $gov_id) {
 		parseSessions (array (
 				$url . $gov_id
-		), $gov_key, true);
+		), $gov_key);
 	}
 }
 
@@ -314,9 +314,8 @@ function parseSessionsDT ($url)
  *
  * @param array $urls URLs of sessions lists
  * @param int $organization_id Organization ID
- * @param bool|false $dt Pages of DT
  */
-function parseSessions ($urls, $organization_id, $dt = false)
+function parseSessions ($urls, $organization_id)
 {
 	foreach ($urls as $url) {
 
@@ -335,7 +334,6 @@ function parseSessions ($urls, $organization_id, $dt = false)
 		$cookiess = substr ($cookiess, 0, -2);
 
 		//  Search on DT page or not TODO: better solution needed
-		//$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1040_';
 		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
 		$form_id = $fmatches[1];
 
