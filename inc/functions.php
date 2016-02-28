@@ -904,6 +904,10 @@ function downloadPage ($url)
 	if ($content == false) {
 		// Log
 		logger ('TIMEOUT: ' . (string)$url);
+
+		if (MAIL_NOTIFY)
+			mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+
 		die('Shutdown: getting timeouts.');
 	}
 	return $content;

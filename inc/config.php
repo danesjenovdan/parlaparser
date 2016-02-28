@@ -24,6 +24,9 @@ ini_set('error_log', 'log/php.log');
 include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
+//  [SETTING] Notification/admin mail address
+define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
+
 //  [SETTING] Download attached documents
 define ('DOC_DOWNLOAD',	false);
 
