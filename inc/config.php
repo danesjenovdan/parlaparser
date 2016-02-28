@@ -36,6 +36,9 @@ $_global_oldest_date = null;
 //  [SETTING] Skip session if any draft message is found
 define ('SKIP_WHEN_REVIEWS', false);
 
+//  [SETTING] Want to recrawl speaches for sessions that were in review last time?
+define ('UPDATE_SESSIONS_IN_REVIEW', true);
+
 //  [SETTING] Classifications for DTs
 $dtclassifs = ['odbor','komisija','kolegij'];
 define ('DT_CLASSIF', json_encode($dtclassifs));
@@ -49,7 +52,7 @@ define ('PARSE_DOCS', true);
 define ('FETCH_TIMEOUT', 3);
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'***REMOVED***');
+define ('PG_HOST',	'***REMOVED***');gi
 define ('PG_PORT',	5432);
 define ('PG_USER',	'parladaddy');
 define ('PG_PASS',	'***REMOVED***');

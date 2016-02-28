@@ -182,7 +182,7 @@ function parseSessionsList ($content, $organization_id)
 
 			// Check if session already imported
 			if ($exists = sessionExists ($session_nouid)) {
-				if ($exists['in_review'] == 'f') continue;
+				if ($exists['in_review'] == 'f' && !UPDATE_SESSIONS_IN_REVIEW) continue;
 				$tmp['id'] = $exists['id']; // Set that session exists
 				$tmp['review_ext'] = true;
 			}
