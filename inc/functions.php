@@ -771,7 +771,7 @@ function saveSession ($session, $organization_id = 95)
 								parladata_ballot
 							(created_at, updated_at, vote_id, voter_id, option, voterparty_id)
 							VALUES
-							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, $realvote) . "', '" . getPersonOrganization ($vote[4]) . "')
+							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, mb_strtolower($realvote)) . "', '" . getPersonOrganization ($vote[4]) . "')
 						";
 						pg_query ($conn, $sql);
 					}
