@@ -46,16 +46,11 @@ define ('PARSE_VOTES', true);
 define ('PARSE_DOCS', true);
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'127.0.0.1');
+define ('PG_HOST',	'***REMOVED***');
 define ('PG_PORT',	5432);
-define ('PG_USER',	'postgres');
-define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'p2');
-//define ('PG_HOST',	'***REMOVED***');
-//define ('PG_PORT',	5432);
-//define ('PG_USER',	'parladaddy');
-//define ('PG_PASS',	'***REMOVED***');
-//define ('PG_NAME',	'parladata');
+define ('PG_USER',	'parladaddy');
+define ('PG_PASS',	'***REMOVED***');
+define ('PG_NAME',	'parladata');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
