@@ -101,7 +101,10 @@ function sessionExists ($session_id)
  */
 function getPersonIdByName ($name)
 {
-	global $people;
+	global $people, $people_new;
+
+	//  Check if this new was added
+	if (!empty($people_new[$name])) return $people_new[$name];
 
 	$tmparr = array ();
 
@@ -123,6 +126,7 @@ function getPersonIdByName ($name)
 	$num = current ($tmparr);
 
 	if ($num <= 6 && !empty($people)) {	//	Should work :)
+		$people_new[$name] = key ($tmparr);
 		return key ($tmparr);	//	NAME: $people[key ($tmparr)]
 	} else {
 		return addPerson ($name);
@@ -210,6 +214,7 @@ function parseSessionsList ($content, $organization_id)
 
 							$speech = parseSpeeches (DZ_URL . $speeches->href, $datum);
 							$tmp['speeches'][$speech['datum']] = $speech;
+							sleep(FETCH_TIMEOUT);
 						}
 					}
 				}
@@ -224,6 +229,7 @@ function parseSessionsList ($content, $organization_id)
 						foreach ($doctable as $doc) {
 							if (stripos($doc->innerText(), "pregled") === false) {
 								$tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
+								sleep(FETCH_TIMEOUT);
 
 							} else {
 								if (SKIP_WHEN_REVIEWS) continue 2;
@@ -241,6 +247,7 @@ function parseSessionsList ($content, $organization_id)
 					foreach ($votearea->find('tbody td a.outputLink') as $votes) {
 						if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
 							$tmp['voting'][] = parseVotes(DZ_URL . $votes->href);
+							sleep(FETCH_TIMEOUT);
 						}
 					}
 				}
@@ -800,7 +807,7 @@ function saveSession ($session, $organization_id = 95)
  */
 function addPerson ($name)
 {
-	global $conn, $people;
+	global $conn, $people, $people_new;
 
 	// Log
 	logger ('NEW PERSON: ' . $name);
@@ -823,6 +830,7 @@ function addPerson ($name)
 			'name' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8"),
 			'name_parser' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")
 		);
+		$people_new[$name] = $person_id;
 //		$people = getPeople ();
 
 		return $person_id;
