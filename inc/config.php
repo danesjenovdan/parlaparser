@@ -46,17 +46,25 @@ define ('PARSE_VOTES', true);
 define ('PARSE_DOCS', true);
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'***REMOVED***');
+define ('PG_HOST',	'127.0.0.1');
 define ('PG_PORT',	5432);
-define ('PG_USER',	'parladaddy');
-define ('PG_PASS',	'***REMOVED***');
-define ('PG_NAME',	'parladata');
+define ('PG_USER',	'postgres');
+define ('PG_PASS',	'postgres');
+define ('PG_NAME',	'p2');
+//define ('PG_HOST',	'***REMOVED***');
+//define ('PG_PORT',	5432);
+//define ('PG_USER',	'parladaddy');
+//define ('PG_PASS',	'***REMOVED***');
+//define ('PG_NAME',	'parladata');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
 
 //	[SETTING] Session setting
 define ('CURRENT_SESSION', 'VII');
+
+//  For benchmark purposes
+//$benchmark = microtime(true);
 
 //	Open connection to DB
 $conn = pg_connect("host=".PG_HOST." port=".PG_PORT." dbname=".PG_NAME." user=".PG_USER." password=".PG_PASS);
