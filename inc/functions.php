@@ -641,8 +641,16 @@ function saveSession ($session, $organization_id = 95)
 	global $conn, $_global_oldest_date, $people;
 
 	// Log
-	logger ('SAVE SESSION: ' . $session['date']);
-	if (empty($session['speeches'])) return false;
+	logger ('SAVING SESSION: ' . $session['date']);
+	if (empty($session['speeches'])) {
+
+		$then = new DateTime($session['date']);
+		if ((int)$then->diff(date_create('now'))->format('%a') < NOTIFY_NOSPEECH) {
+			// Log
+			logger ('SAVING SESSION FAILED: NO SPEECHES');
+			return false;
+		}
+	}
 
 	if (!empty($session['id'])) {
 		if ($session['review_ext'] == 1 && $session['review'] == 0) {
@@ -683,6 +691,9 @@ function saveSession ($session, $organization_id = 95)
 			return false;
 		}
 	}
+
+	// Log
+	logger ('SAVED SESSION: ' . $session['date']);
 
 	$_global_oldest_date = $session['date'];
 
