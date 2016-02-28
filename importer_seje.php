@@ -14,6 +14,7 @@ $urls = array (
 		'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/redne',
 		'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
 );
+$url_dt = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbranoDt?idDT=';
 
 // TEST ONLY! Deletes all stuff from database - only what parser creates
 // pg_query ('DELETE FROM parladata_speech');
@@ -25,6 +26,7 @@ $urls = array (
 
 // Jože požen
 parseSessions ($urls, 95);
+parseSessionsDT ($url_dt);
 
 // Do things on end
 parserShutdown();
