@@ -21,10 +21,15 @@ define ('LOGGING', true);
 ini_set('error_log', 'log/php.log');
 
 //	Includes
-if (!file_exists('inc/database.php')) die('Oops, your database.php file seems to be missing.');
-include_once 'database.php';
 include_once 'simple_html_dom.php';
 include_once 'functions.php';
+
+//	[SETTING] Database settings
+define ('PG_HOST',	'127.0.0.1');
+define ('PG_PORT',	5432);
+define ('PG_USER',	'postgres');
+define ('PG_PASS',	'postgres');
+define ('PG_NAME',	'p2');
 
 //  [SETTING] Notification/admin mail address
 define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
