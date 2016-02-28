@@ -324,9 +324,11 @@ function parseSessions ($urls, $organization_id)
 
 		//	Retrieve cookies
 		$cookiess = '';
-		foreach ($http_response_header as $s){
-			if (preg_match('|^Set-Cookie:\s*([^=]+)=([^;]+);(.+)$|',$s,$parts))
-				$cookiess.= $parts[1] . '=' . $parts[2] . '; ';
+		if (isset($http_response_header)) {
+			foreach ($http_response_header as $s){
+				if (preg_match('|^Set-Cookie:\s*([^=]+)=([^;]+);(.+)$|',$s,$parts))
+					$cookiess.= $parts[1] . '=' . $parts[2] . '; ';
+			}
 		}
 		$cookiess = substr ($cookiess, 0, -2);
 
