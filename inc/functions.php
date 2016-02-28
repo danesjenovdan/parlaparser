@@ -141,7 +141,6 @@ function getPersonIdByName ($name)
  */
 function parseSessionsList ($content, $organization_id)
 {
-	global $benchmark;
 	$data = str_get_html ($content);
 
 	//	Check for single sessions
@@ -192,7 +191,7 @@ function parseSessionsList ($content, $organization_id)
 
 			// Get session
 			$session_link = str_replace('&amp;', '&', $session_link); // Some weird shit changed recently on DZRS server
-			$session = file_get_html(DZ_URL . $session_link);
+			$session = str_get_html(downloadPage(DZ_URL . $session_link));
 
 			// Parse data
 			$tmp['speeches'] = array ();
@@ -306,7 +305,7 @@ function parseSessionsDT ($url)
 	foreach ($dts as $gov_key => $gov_id) {
 		parseSessions (array (
 				$url . $gov_id
-		), $gov_key, true);
+		), $gov_key);
 	}
 }
 
@@ -315,17 +314,13 @@ function parseSessionsDT ($url)
  *
  * @param array $urls URLs of sessions lists
  * @param int $organization_id Organization ID
- * @param bool|false $dt Pages of DT
  */
-function parseSessions ($urls, $organization_id, $dt = false)
+function parseSessions ($urls, $organization_id)
 {
 	foreach ($urls as $url) {
 
 		//	Get main page
-		$base = file_get_contents($url);
-
-		//	Parse main page
-		parseSessionsList ($base, $organization_id);
+		$base = downloadPage($url);
 
 		//	Retrieve cookies
 		$cookiess = '';
@@ -335,8 +330,10 @@ function parseSessions ($urls, $organization_id, $dt = false)
 		}
 		$cookiess = substr ($cookiess, 0, -2);
 
+		//	Parse main page
+		parseSessionsList ($base, $organization_id);
+
 		//  Search on DT page or not TODO: better solution needed
-		//$form_id = ($dt) ? 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF10I2_' : 'viewns_Z7_KIOS9B1A0OVH70IHS14SVF1040_';
 		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
 		$form_id = $fmatches[1];
 
@@ -391,7 +388,7 @@ function parseSpeeches ($url, $datum)
 {
 	global $benchmark;
 
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH SPEECH: ' . $url);
@@ -519,7 +516,7 @@ function parseVotes ($url)
 {
 	$array = array ();
 
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH VOTES: ' . $url);
@@ -587,7 +584,7 @@ function parseVotes ($url)
 function parseDocument ($url)
 {
 	$array = array ();
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH DOC: ' . $url);
@@ -613,7 +610,7 @@ function parseDocument ($url)
 
 				if (preg_match ('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
 
-					$filet = file_get_contents ($matches[1]);
+					$filet = downloadPage($matches[1]);
 					if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
 						$array['filename_orig'] = $tdinfo;
 						$array['link'] = $matches2[1];
@@ -642,7 +639,7 @@ function saveSession ($session, $organization_id = 95)
 	global $conn, $_global_oldest_date, $people;
 
 	// Log
-	logger ('SAVE SESSION');
+	logger ('SAVE SESSION: ' . $session['date']);
 	if (empty($session['speeches'])) return false;
 
 	if (!empty($session['id'])) {
@@ -784,18 +781,20 @@ function saveSession ($session, $organization_id = 95)
 
 		//	Save documents
 		foreach ($session['documents'] as $document) {
-			$sql = "
-				INSERT INTO
-					parladata_link
-				(created_at, updated_at, url, note, organization_id, date, name, session_id)
-				VALUES
-				(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
-			";
-			pg_query ($conn, $sql);
+			if (!empty($document['link'])) {
+				$sql = "
+					INSERT INTO
+						parladata_link
+					(created_at, updated_at, url, note, organization_id, date, name, session_id)
+					VALUES
+					(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
+				";
+				pg_query ($conn, $sql);
 
-			//  Download documents
-			if (DOC_DOWNLOAD) {
-				file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
+				//  Download documents
+				if (DOC_DOWNLOAD) {
+					file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
+				}
 			}
 		}
 	}
@@ -868,13 +867,46 @@ function logger ($message)
 }
 
 /**
- * Shitdown events
+ * Shutdown events
  */
 function parserShutdown ()
 {
 	global $_global_oldest_date;
 
 	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
+}
+
+/**
+ * Downloads a page from URL
+ * @param string $url URL to fetch
+ * @return mixed Fetched content or false
+ */
+function downloadPage ($url)
+{
+	$content = false;
+	$errcnt = 0;
+	$ctx = stream_context_create(array('http'=>
+		array(
+			'timeout' => 5,
+		)
+	));
+	while($content == false && $errcnt < 10)
+	{
+		if ($errcnt > 0) {
+			// Log
+			logger ('DOWNLOAD RETRY ' . $errcnt . ': ' . $url);
+		}
+		$content = file_get_contents($url, false, $ctx);
+		$errcnt++;
+		usleep(1);
+	}
+
+	if ($content == false) {
+		// Log
+		logger ('TIMEOUT: ' . (string)$url);
+		die('Shutdown: getting timeouts.');
+	}
+	return $content;
 }
 
 
