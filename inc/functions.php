@@ -322,9 +322,6 @@ function parseSessions ($urls, $organization_id)
 		//	Get main page
 		$base = downloadPage($url);
 
-		//	Parse main page
-		parseSessionsList ($base, $organization_id);
-
 		//	Retrieve cookies
 		$cookiess = '';
 		foreach ($http_response_header as $s){
@@ -332,6 +329,9 @@ function parseSessions ($urls, $organization_id)
 				$cookiess.= $parts[1] . '=' . $parts[2] . '; ';
 		}
 		$cookiess = substr ($cookiess, 0, -2);
+
+		//	Parse main page
+		parseSessionsList ($base, $organization_id);
 
 		//  Search on DT page or not TODO: better solution needed
 		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
@@ -781,18 +781,20 @@ function saveSession ($session, $organization_id = 95)
 
 		//	Save documents
 		foreach ($session['documents'] as $document) {
-			$sql = "
-				INSERT INTO
-					parladata_link
-				(created_at, updated_at, url, note, organization_id, date, name, session_id)
-				VALUES
-				(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
-			";
-			pg_query ($conn, $sql);
+			if (!empty($document['link'])) {
+				$sql = "
+					INSERT INTO
+						parladata_link
+					(created_at, updated_at, url, note, organization_id, date, name, session_id)
+					VALUES
+					(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
+				";
+				pg_query ($conn, $sql);
 
-			//  Download documents
-			if (DOC_DOWNLOAD) {
-				file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
+				//  Download documents
+				if (DOC_DOWNLOAD) {
+					file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
+				}
 			}
 		}
 	}
