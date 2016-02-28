@@ -15,11 +15,11 @@ $urls = array (
 );
 
 // TEST ONLY! Deletes all stuff from database - only what parser creates
-//pg_query ('DELETE FROM parladata_speech');
-//pg_query ('DELETE FROM parladata_ballot');
-//pg_query ('DELETE FROM parladata_vote');
-//pg_query ('DELETE FROM parladata_motion');
-//pg_query ('DELETE FROM parladata_session');
+// pg_query ('DELETE FROM parladata_speech');
+// pg_query ('DELETE FROM parladata_ballot');
+// pg_query ('DELETE FROM parladata_vote');
+// pg_query ('DELETE FROM parladata_motion');
+// pg_query ('DELETE FROM parladata_session');
 //exit(); // DECIDE IF YOU WANT TO RUN -> FOR MARKO'S DEV
 
 // Jože požen
