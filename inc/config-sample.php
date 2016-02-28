@@ -34,6 +34,9 @@ define ('PG_NAME',	'postgres');
 //  [SETTING] Notification/admin mail address
 define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
 
+//  [SETTING] Session without speech is only added after how many days?
+define ('NOTIFY_NOSPEECH',	60);
+
 //  [SETTING] Download attached documents
 define ('DOC_DOWNLOAD',	false);
 
