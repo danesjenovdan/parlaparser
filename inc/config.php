@@ -21,6 +21,8 @@ define ('LOGGING', true);
 ini_set('error_log', 'log/php.log');
 
 //	Includes
+if (!file_exists('inc/database.php')) die('Oops, your database.php file seems to be missing.');
+include_once 'database.php';
 include_once 'simple_html_dom.php';
 include_once 'functions.php';
 
@@ -54,13 +56,6 @@ define ('PARSE_DOCS', true);
 
 //  [SETTING] Optional delay between requests in seconds
 define ('FETCH_TIMEOUT', 0);
-
-//	[SETTING] Database settings
-define ('PG_HOST',	'127.0.0.1');
-define ('PG_PORT',	5432);
-define ('PG_USER',	'postgres');
-define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'p2');
 
 //  Source URL
 define ('DZ_URL',	'http://www.dz-rs.si');
