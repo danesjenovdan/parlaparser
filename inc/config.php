@@ -46,7 +46,7 @@ define ('PARSE_VOTES', true);
 define ('PARSE_DOCS', true);
 
 //  [SETTING] Optional delay between requests in seconds
-define ('FETCH_TIMEOUT', 0);
+define ('FETCH_TIMEOUT', 2);
 
 //	[SETTING] Database settings
 define ('PG_HOST',	'192.168.110.31');
