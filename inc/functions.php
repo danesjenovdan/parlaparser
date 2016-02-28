@@ -319,6 +319,9 @@ function parseSessions ($urls, $organization_id)
 {
 	foreach ($urls as $url) {
 
+		// Log
+		logger ('SESSIONS: ' . $url);
+
 		//	Get main page
 		$base = downloadPage($url);
 
@@ -909,7 +912,7 @@ function downloadPage ($url)
 			// Log
 			logger ('DOWNLOAD RETRY ' . $errcnt . ': ' . $url);
 		}
-		$content = file_get_contents($url, false, $ctx);
+		$content = @file_get_contents($url, false, $ctx); // Sorry for @
 		$errcnt++;
 		usleep(1);
 	}
