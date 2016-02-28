@@ -141,7 +141,6 @@ function getPersonIdByName ($name)
  */
 function parseSessionsList ($content, $organization_id)
 {
-	global $benchmark;
 	$data = str_get_html ($content);
 
 	//	Check for single sessions
@@ -192,7 +191,7 @@ function parseSessionsList ($content, $organization_id)
 
 			// Get session
 			$session_link = str_replace('&amp;', '&', $session_link); // Some weird shit changed recently on DZRS server
-			$session = file_get_html(DZ_URL . $session_link);
+			$session = str_get_html(downloadPage(DZ_URL . $session_link));
 
 			// Parse data
 			$tmp['speeches'] = array ();
@@ -322,7 +321,7 @@ function parseSessions ($urls, $organization_id, $dt = false)
 	foreach ($urls as $url) {
 
 		//	Get main page
-		$base = file_get_contents($url);
+		$base = downloadPage($url);
 
 		//	Parse main page
 		parseSessionsList ($base, $organization_id);
@@ -391,7 +390,7 @@ function parseSpeeches ($url, $datum)
 {
 	global $benchmark;
 
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH SPEECH: ' . $url);
@@ -519,7 +518,7 @@ function parseVotes ($url)
 {
 	$array = array ();
 
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH VOTES: ' . $url);
@@ -587,7 +586,7 @@ function parseVotes ($url)
 function parseDocument ($url)
 {
 	$array = array ();
-	$data = file_get_html (str_replace('&amp;', '&', $url));
+	$data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
 
 	// Log
 	logger ('FETCH DOC: ' . $url);
@@ -613,7 +612,7 @@ function parseDocument ($url)
 
 				if (preg_match ('/\'(http:.*?)\'/s', (string)$td->onclick, $matches)) {
 
-					$filet = file_get_contents ($matches[1]);
+					$filet = downloadPage($matches[1]);
 					if (preg_match ('/url=(.*?)"/s', trim ($filet), $matches2)) {
 						$array['filename_orig'] = $tdinfo;
 						$array['link'] = $matches2[1];
@@ -642,7 +641,7 @@ function saveSession ($session, $organization_id = 95)
 	global $conn, $_global_oldest_date, $people;
 
 	// Log
-	logger ('SAVE SESSION');
+	logger ('SAVE SESSION: ' . $session['date']);
 	if (empty($session['speeches'])) return false;
 
 	if (!empty($session['id'])) {
@@ -868,13 +867,46 @@ function logger ($message)
 }
 
 /**
- * Shitdown events
+ * Shutdown events
  */
 function parserShutdown ()
 {
 	global $_global_oldest_date;
 
 	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
+}
+
+/**
+ * Downloads a page from URL
+ * @param string $url URL to fetch
+ * @return mixed Fetched content or false
+ */
+function downloadPage ($url)
+{
+	$content = false;
+	$errcnt = 0;
+	$ctx = stream_context_create(array('http'=>
+		array(
+			'timeout' => 5,
+		)
+	));
+	while($content == false && $errcnt < 10)
+	{
+		if ($errcnt > 0) {
+			// Log
+			logger ('DOWNLOAD RETRY ' . $errcnt . ': ' . $url);
+		}
+		$content = file_get_contents($url, false, $ctx);
+		$errcnt++;
+		usleep(1);
+	}
+
+	if ($content == false) {
+		// Log
+		logger ('TIMEOUT: ' . (string)$url);
+		die('Shutdown: getting timeouts.');
+	}
+	return $content;
 }
 
 
