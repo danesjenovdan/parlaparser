@@ -733,7 +733,7 @@ function saveSession ($session, $organization_id = 95)
 		foreach ($session['voting'] as $voting) {
 
 			//	Set name to "dokument" when "naslov" is empty
-			$name = (!empty ($voting['naslov'])) ? $voting['naslov'] : $voting['dokument'];
+			$name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
 
 			$sql = "
 				INSERT INTO
@@ -992,4 +992,3 @@ function getAllVotes()
 	}
 	return $array;
 }
-
