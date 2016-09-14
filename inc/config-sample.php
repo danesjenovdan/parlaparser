@@ -77,3 +77,5 @@ define ('CURRENT_SESSION', 'VII');
 //	Open connection to DB
 $conn = pg_connect("host=".PG_HOST." port=".PG_PORT." dbname=".PG_NAME." user=".PG_USER." password=".PG_PASS);
 if (!$conn) die ('Cannot connect to DB');
+
+$http_response_header = null;

@@ -153,7 +153,7 @@ function parseSessionsList ($content, $organization_id)
 
 	foreach ($content as $link) {
 		$session_name = $link->text();
-
+        var_dump($session_name);
 		$session_link = $link->href;
 		$session_nouid = preg_replace ('/\&uid.*$/is', '', $session_link);
 
@@ -303,6 +303,7 @@ function parseSessionsDT ($url)
 	$dts = getDTs ();
 
 	foreach ($dts as $gov_key => $gov_id) {
+        var_dump($gov_id);
 		parseSessions (array (
 				$url . $gov_id
 		), $gov_key);
@@ -317,6 +318,7 @@ function parseSessionsDT ($url)
  */
 function parseSessions ($urls, $organization_id)
 {
+    global $http_response_header;
 	foreach ($urls as $url) {
 
 		// Log
@@ -335,8 +337,10 @@ function parseSessions ($urls, $organization_id)
 		}
 		$cookiess = substr ($cookiess, 0, -2);
 
+
+
 		//	Parse main page
-		parseSessionsList ($base, $organization_id);
+//		parseSessionsList ($base, $organization_id);
 
 		//  Search on DT page or not TODO: better solution needed
 		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
@@ -900,6 +904,7 @@ function parserShutdown ()
  */
 function downloadPage ($url)
 {
+    global $http_response_header;
 	$content = false;
 	$errcnt = 0;
 	$ctx = stream_context_create(array('http'=>
