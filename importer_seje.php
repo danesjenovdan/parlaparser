@@ -22,3 +22,5 @@ parseSessionsDT ($url_dt);
 
 // Do things on end
 parserShutdown();
+
+sendSms("DND done");

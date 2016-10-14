@@ -79,3 +79,8 @@ $conn = pg_connect("host=".PG_HOST." port=".PG_PORT." dbname=".PG_NAME." user=".
 if (!$conn) die ('Cannot connect to DB');
 
 $http_response_header = null;
+
+define('SMS_USER', '');
+define('SMS_PASS', '');
+define('SMS_FROM', "031583610");
+$SMS_TO = array("031583610");
