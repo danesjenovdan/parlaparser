@@ -997,3 +997,37 @@ function getAllVotes()
 	}
 	return $array;
 }
+
+
+function sendSms($message){
+    global $SMS_TO;
+    $url = "http://www.smsapi.si/poslji-sms";
+    $data = array("un" => urlencode(SMS_USER),
+        "ps" => urlencode(SMS_PASS),
+        "from" => urlencode(SMS_FROM),
+        "m" => urlencode($message),
+        "cc" => urlencode("386"),
+        "dr" => urlencode("1"),
+        //	'unicode' => urlencode('1'),
+    );
+
+    $result = null;
+    foreach ($SMS_TO as $to) {
+
+        $data["to"] = urlencode($to);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+        $result[] = curl_exec($ch);
+        curl_close($ch);
+    }
+    return $result;
+}
