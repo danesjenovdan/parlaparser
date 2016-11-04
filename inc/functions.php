@@ -153,7 +153,7 @@ function parseSessionsList ($content, $organization_id)
 
 	foreach ($content as $link) {
 		$session_name = $link->text();
-
+        var_dump($session_name);
 		$session_link = $link->href;
 		$session_nouid = preg_replace ('/\&uid.*$/is', '', $session_link);
 
@@ -303,6 +303,7 @@ function parseSessionsDT ($url)
 	$dts = getDTs ();
 
 	foreach ($dts as $gov_key => $gov_id) {
+        var_dump($gov_id);
 		parseSessions (array (
 				$url . $gov_id
 		), $gov_key);
@@ -317,6 +318,7 @@ function parseSessionsDT ($url)
  */
 function parseSessions ($urls, $organization_id)
 {
+    global $http_response_header;
 	foreach ($urls as $url) {
 
 		// Log
@@ -335,8 +337,10 @@ function parseSessions ($urls, $organization_id)
 		}
 		$cookiess = substr ($cookiess, 0, -2);
 
+
+
 		//	Parse main page
-		parseSessionsList ($base, $organization_id);
+//		parseSessionsList ($base, $organization_id);
 
 		//  Search on DT page or not TODO: better solution needed
 		preg_match('/form id="(.*?):sf:form1"/', $base, $fmatches);
@@ -642,7 +646,7 @@ function parseDocument ($url)
  */
 function saveSession ($session, $organization_id = 95)
 {
-	global $conn, $_global_oldest_date, $people;
+	global $conn, $_global_oldest_date, $people, $reportData;
 
 	// Log
 	logger ('SAVING SESSION: ' . $session['date']);
@@ -687,10 +691,14 @@ function saveSession ($session, $organization_id = 95)
 			(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (int)(bool)$session['review'] . "')
 			RETURNING id
 		";
+
 		$result = pg_query ($conn, $sql);
 		if (pg_affected_rows ($result) > 0) {
 			$insert_row = pg_fetch_row($result);
 			$session_id = $insert_row[0];
+
+            $reportData["parladata_session"][] = array($session_id, $session['date'], $session['name']);
+
 		} else {
 			return false;
 		}
@@ -724,6 +732,8 @@ function saveSession ($session, $organization_id = 95)
 				(NOW(), NOW(), '" . pg_escape_string ($conn, $talk['id']) . "', '" . pg_escape_string ($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization ($talk['id']) . "')
 			";
 			pg_query ($conn, $sql);
+
+            $reportData["parladata_speech"][] = array($talk['id'], $speech_date);
 		}
 	}
 
@@ -743,6 +753,8 @@ function saveSession ($session, $organization_id = 95)
 				(NOW(), NOW(), '" . $organization_id . "', '" . $voting['date'] . "', '" . $session_id . "', '" . pg_escape_string ($conn, $name) . "', '" . $organization_id . "')
 				RETURNING id
 			";
+
+            $reportData["parladata_motion"][] = array($session_id, $voting['date'], $organization_id);
 			$result = pg_query ($conn, $sql);
 			if (pg_affected_rows ($result) > 0) {
 				$insert_row = pg_fetch_row ($result);
@@ -759,6 +771,8 @@ function saveSession ($session, $organization_id = 95)
 					(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "', '" . $faza . "')
 					RETURNING id
 				";
+                $reportData["parladata_vote"][] = array($session_id, $voting['date']);
+
 				$result = pg_query ($conn, $sql);
 				if (pg_affected_rows ($result) > 0) {
 					$insert_row = pg_fetch_row ($result);
@@ -791,6 +805,7 @@ function saveSession ($session, $organization_id = 95)
 							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, mb_strtolower($realvote)) . "', '" . getPersonOrganization ($vote[4]) . "')
 						";
 						pg_query ($conn, $sql);
+                        $reportData["parladata_ballot"][] = array($voting_id);
 					}
 				}
 			}
@@ -807,6 +822,8 @@ function saveSession ($session, $organization_id = 95)
 					(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
 				";
 				pg_query ($conn, $sql);
+
+                $reportData["parladata_link"][] = array($document['title']);
 
 				//  Download documents
 				if (DOC_DOWNLOAD) {
@@ -851,6 +868,8 @@ function addPerson ($name)
 		$people_new[$name] = $person_id;
 //		$people = getPeople ();
 
+        $reportData["person"][] = array($person_id, $name);
+
 		return $person_id;
 	}
 	return 0;
@@ -890,6 +909,7 @@ function parserShutdown ()
 {
 	global $_global_oldest_date;
 
+    if (EXEC_SCRIPT_RUNNER) exec(EXEC_SCRIPT_RUNNER);
 	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
@@ -900,6 +920,7 @@ function parserShutdown ()
  */
 function downloadPage ($url)
 {
+    global $http_response_header;
 	$content = false;
 	$errcnt = 0;
 	$ctx = stream_context_create(array('http'=>
@@ -991,4 +1012,76 @@ function getAllVotes()
 		}
 	}
 	return $array;
+}
+
+use Mailgun\Mailgun;
+function sendReport(){
+
+    global $MAILGUN_TO, $reportData;
+    $domain = MAILGUN_DOMAIN;
+
+    $client = new \GuzzleHttp\Client([
+        'verify' => false,
+    ]);
+    $adapter = new \Http\Adapter\Guzzle6\Client($client);
+    $mailgun = new \Mailgun\Mailgun(MAILGUN_KEY, $adapter);
+
+    var_dump($reportData);
+
+    if(count($reportData) < 1){
+        return false;
+    }
+
+
+    $html = '<pre>'. print_r($reportData, true) .'</pre>';
+
+    foreach ($MAILGUN_TO as $item) {
+
+
+        $result = $mailgun->sendMessage($domain, array(
+            'from' => MAILGUN_FROM,
+            'to' => $item,
+            //'cc'      => 'baz@example.com',
+            //'bcc'     => 'bar@example.com',
+            'subject' => 'ParlameterParser Report',
+            'text' => strip_tags($html),
+            'html' => $html
+        ));
+
+    }
+
+
+}
+
+function sendSms($message){
+    global $SMS_TO;
+    $url = "http://www.smsapi.si/poslji-sms";
+    $data = array("un" => urlencode(SMS_USER),
+        "ps" => urlencode(SMS_PASS),
+        "from" => urlencode(SMS_FROM),
+        "m" => urlencode($message),
+        "cc" => urlencode("386"),
+        "dr" => urlencode("1"),
+        //	'unicode' => urlencode('1'),
+    );
+
+    $result = null;
+    foreach ($SMS_TO as $to) {
+
+        $data["to"] = urlencode($to);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+        $result[] = curl_exec($ch);
+        curl_close($ch);
+    }
+    return $result;
 }
