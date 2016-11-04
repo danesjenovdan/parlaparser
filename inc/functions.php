@@ -909,7 +909,7 @@ function parserShutdown ()
 {
 	global $_global_oldest_date;
 
-    if (EXEC_SCRIPT_RUNNER) exec(EXEC_SCRIPT_RUNNER);
+    if (EXEC_SCRIPT_RUNNER) exec(sprintf('%s', EXEC_SCRIPT_RUNNER));
 	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
