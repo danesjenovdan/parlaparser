@@ -1026,18 +1026,16 @@ function sendReport(){
     $adapter = new \Http\Adapter\Guzzle6\Client($client);
     $mailgun = new \Mailgun\Mailgun(MAILGUN_KEY, $adapter);
 
-    var_dump($reportData);
-
     if(count($reportData) < 1){
         return false;
     }
 
-
-    $html = '<pre>'. print_r($reportData, true) .'</pre>';
+    $html = '';
+    $html .= '<a href="https://data.parlameter.si/tags/">tag me here</a> <br><br>';
+    $html .= 'new session:<br>';
+    $html .= '<pre>'. print_r($reportData, true) .'</pre>';
 
     foreach ($MAILGUN_TO as $item) {
-
-
         $result = $mailgun->sendMessage($domain, array(
             'from' => MAILGUN_FROM,
             'to' => $item,
@@ -1047,10 +1045,7 @@ function sendReport(){
             'text' => strip_tags($html),
             'html' => $html
         ));
-
     }
-
-
 }
 
 function sendSms($message){
