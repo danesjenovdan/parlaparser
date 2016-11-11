@@ -909,7 +909,7 @@ function parserShutdown ()
 {
 	global $_global_oldest_date;
 
-    if (EXEC_SCRIPT_RUNNER) exec(EXEC_SCRIPT_RUNNER);
+    if (EXEC_SCRIPT_RUNNER) exec(sprintf('%s', EXEC_SCRIPT_RUNNER));
 	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
@@ -1026,14 +1026,15 @@ function sendReport(){
     $adapter = new \Http\Adapter\Guzzle6\Client($client);
     $mailgun = new \Mailgun\Mailgun(MAILGUN_KEY, $adapter);
 
-    if(count($reportData) < 1){
-        return false;
-    }
-
     $html = '';
-    $html .= '<a href="https://data.parlameter.si/tags/">tag me here</a> <br><br>';
-    $html .= 'new session:<br>';
-    $html .= '<pre>'. print_r($reportData, true) .'</pre>';
+    if(count($reportData) > 0){
+        $html .= '<a href="https://data.parlameter.si/tags/">tag me here</a> <br><br>';
+        $html .= 'new session:<br>';
+        $html .= '<pre>'. print_r($reportData, true) .'</pre>';
+    }else{
+        $html .= '<h1>parser done</h1>';
+        $html .= '<p>NO new data parsed</p>';
+    }
 
     foreach ($MAILGUN_TO as $item) {
         $result = $mailgun->sendMessage($domain, array(
