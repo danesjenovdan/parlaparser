@@ -1026,14 +1026,15 @@ function sendReport(){
     $adapter = new \Http\Adapter\Guzzle6\Client($client);
     $mailgun = new \Mailgun\Mailgun(MAILGUN_KEY, $adapter);
 
-    if(count($reportData) < 1){
-        return false;
-    }
-
     $html = '';
-    $html .= '<a href="https://data.parlameter.si/tags/">tag me here</a> <br><br>';
-    $html .= 'new session:<br>';
-    $html .= '<pre>'. print_r($reportData, true) .'</pre>';
+    if(count($reportData) > 0){
+        $html .= '<a href="https://data.parlameter.si/tags/">tag me here</a> <br><br>';
+        $html .= 'new session:<br>';
+        $html .= '<pre>'. print_r($reportData, true) .'</pre>';
+    }else{
+        $html .= '<h1>parser done</h1>';
+        $html .= '<p>NO new data parsed</p>';
+    }
 
     foreach ($MAILGUN_TO as $item) {
         $result = $mailgun->sendMessage($domain, array(
