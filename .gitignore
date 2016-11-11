@@ -1,2 +1,5 @@
 .idea/
 nohup.out
+composer.lock
+composer.phar
+vendor/
