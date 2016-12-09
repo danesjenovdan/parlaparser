@@ -23,11 +23,9 @@ parseSessions ($urls, 95);
 $url_dt = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbranoDt?idDT=';
 parseSessionsDT ($url_dt);
 
-
-
-sendReport();
-
 // Do things on end
 parserShutdown();
+
+sendReport();
 
 sendSms("DND done");
