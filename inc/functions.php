@@ -596,7 +596,7 @@ function parseSpeeches ($url, $datum)
 	$content = preg_replace ('/[\n\r](<b>)?(\d+\. TR.*?)(<\/b>)?[\n\r]/s', '', $content);
 
 	// Umik "(nadaljevanje")
-	$content = preg_replace ('/([\n\r]+\t\(nadaljevanje\)? )/is', '', $content);
+	$content = preg_replace ('/([\n\r]+\t\(nadaljevanje\)? )/is', ' ', $content);
 
 	// Umik prekinitev sej
 	$content = preg_replace ('/(\t(<b>)?\(Seja.*?ob [\d\.]{5,6}\)(<\/b>)?[\n\r]+)/si', '', $content);
