@@ -128,9 +128,6 @@ function sessionExistsWithMotions ($session_id)
             $mResultArray = $row;
         }
 
-        // var_dump($mRow);
-        // var_dump($mResultArray);
-
         if (pg_num_rows ($result) > 0 && $mResultArray["motions"] !== "{NULL}") {
             return $mResultArray;
         }

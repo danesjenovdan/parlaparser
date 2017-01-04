@@ -1,6 +1,4 @@
 <?php
-
-
 /**
  * Parse single session page
  *
@@ -24,7 +22,7 @@ function parseSessionsList($content, $organization_id)
     foreach ($content as $link) {
 
         $session_name = $link->text();
-        var_dump($session_name);
+        var_dumpp($session_name);
         $session_link = $link->href;
         $session_nouid = preg_replace('/\&uid.*$/is', '', $session_link);
 
@@ -57,8 +55,8 @@ function parseSessionsList($content, $organization_id)
                 $tmp['id'] = $exists['id']; // Set that session exists
                 $tmp['review_ext'] = true;
             }
-            var_dump($tmp);
-            var_dump($exists);
+            var_dumpp($tmp);
+            var_dumpp($exists);
 
             // Log
             logger('FETCH SESSION: ' . DZ_URL . $session_link);
@@ -107,7 +105,7 @@ function parseSessionsList($content, $organization_id)
                         }
                         if (count($parseSpeeches) > 0) {
                             foreach ($parseSpeeches as $parseSpeeche) {
-                                var_dump($parseSpeeche);
+                                var_dumpp($parseSpeeche);
                                 if (!$parseSpeeche['sessionId']) {
 
                                     $speech = parseSpeeches($parseSpeeche['url'], $parseSpeeche['dateStart']);
@@ -129,17 +127,9 @@ function parseSessionsList($content, $organization_id)
                                         $tmp['speeches'][$speech['datum']]['insertToDb'] = 'parladata_speechinreview';
                                     }
 
-//                                    if (!isSpeechInDb($parseSpeeche['dateStart'], $parseSpeeche['sessionId'], $parseSpeeche['in_review'])) {
-//
-//                                        $speech = parseSpeeches($parseSpeeche['url'], $parseSpeeche['dateStart']);
-//                                        $tmp['speeches'][$speech['datum']] = $speech;
-//                                        $tmp['speeches'][$speech['datum']]['review'] = $parseSpeeche['in_review'];
-//                                        sleep(FETCH_TIMEOUT);
-//
-//                                    }
                                 }
                             }
-                            //var_dump($tmp['speeches'][$speech['datum']]);
+                            //var_dumpp($tmp['speeches'][$speech['datum']]);
                         }
 
                     }
@@ -187,7 +177,7 @@ function parseSessionsList($content, $organization_id)
 
                     for ($i = 1; $i <= (int)$matchesp[1]; $i++) {
 
-                        var_dump($i);
+                        var_dumpp($i);
 
                         //	Get next page
                         $postdata = http_build_query(
@@ -239,8 +229,8 @@ function parseSessionsList($content, $organization_id)
 
             //	Add to DB
             saveSession($tmp, $organization_id);
-            var_dump("SAVE:");
-            var_dump($organization_id);
+            var_dumpp("SAVE:");
+            var_dumpp($organization_id);
         }
     }
 }
@@ -255,7 +245,7 @@ function parseSessionsDT($url)
     $dts = getDTs();
 
     foreach ($dts as $gov_key => $gov_id) {
-        var_dump($gov_id);
+        var_dumpp($gov_id);
         parseSessions(array(
             $url . $gov_id
         ), $gov_key);
@@ -601,7 +591,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
     $session_link = $sessionData['gov_id'];
     $session_nouid = $sessionData['gov_id'];
 
-    var_dump($sessionData);
+    var_dumpp($sessionData);
     $date = new DateTime($sessionData['start_time']);
     $session_date = $date->format('Y-m-d');
 
@@ -618,7 +608,6 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
     if ($date < new DateTime('NOW')) {
 
-
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
             if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
@@ -627,8 +616,8 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
         }
-        var_dump($tmp);
-        var_dump($exists);
+        var_dumpp($tmp);
+        var_dumpp($exists);
 
 
         //	Retrieve cookies
@@ -671,7 +660,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                     }
                     if (count($parseSpeeches) > 0) {
                         foreach ($parseSpeeches as $parseSpeeche) {
-                            var_dump($parseSpeeche);
+                            var_dumpp($parseSpeeche);
                             if (!$parseSpeeche['sessionId']) {
 
                                 $speech = parseSpeeches($parseSpeeche['url'], $parseSpeeche['dateStart']);
@@ -693,17 +682,10 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                                 }else{
                                     $tmp['speeches'][$speech['datum']]['insertToDb'] = 'parladata_speechinreview';
                                 }
-//                                if (!isSpeechInDb($parseSpeeche['dateStart'], $parseSpeeche['sessionId'], $parseSpeeche['in_review'])) {
-//
-//                                    $speech = parseSpeeches($parseSpeeche['url'], $parseSpeeche['dateStart']);
-//                                    $tmp['speeches'][$speech['datum']] = $speech;
-//                                    $tmp['speeches'][$speech['datum']]['review'] = $parseSpeeche['in_review'];
-//                                    sleep(FETCH_TIMEOUT);
-//
-//                                }
+
                             }
                         }
-                        //var_dump($tmp['speeches'][$speech['datum']]);
+                        //var_dumpp($tmp['speeches'][$speech['datum']]);
                     }
 
                 }
@@ -751,7 +733,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
                 for ($i = 1; $i <= (int)$matchesp[1]; $i++) {
 
-                    var_dump($i);
+                    var_dumpp($i);
 
                     //	Get next page
                     $postdata = http_build_query(
@@ -803,8 +785,8 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
         //	Add to DB
         saveSession($tmp, $organization_id);
-        var_dump("SAVE:");
-        var_dump($organization_id);
+        var_dumpp("SAVE:");
+        var_dumpp($organization_id);
     }
 
 }
