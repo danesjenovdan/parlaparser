@@ -4,8 +4,8 @@
 function isSpeechInDb($dateStart, $sessionId, $review){
     global $conn;
 
-    var_dump($dateStart);
-    var_dump($sessionId);
+    var_dumpp($dateStart);
+    var_dumpp($sessionId);
 
     if(!$sessionId){
         return false;
