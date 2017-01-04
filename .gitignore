@@ -3,3 +3,6 @@ nohup.out
 composer.lock
 composer.phar
 vendor/
+gitignore/
+inc/config.php
+inc/config_custom.php
