@@ -1,7 +1,4 @@
 <?php
-
-
-
 /**
  * Save vote to database
  *
@@ -13,8 +10,7 @@ function saveVotes ($session, $organization_id = 95) {
     global $conn, $_global_oldest_date, $people, $reportData;
 
     // Log
-
-    var_dump($session['id']);
+    var_dumpp($session['id']);
 
     $session_id = $session['id'];
 
@@ -105,8 +101,7 @@ function saveSession ($session, $organization_id = 95)
     global $conn, $_global_oldest_date, $people, $reportData;
 
     // Log
-
-    var_dump($session['id']);
+    var_dumpp($session['id']);
 
     logger ('SAVING SESSION: ' . $session['date']);
     if (empty($session['speeches'])) {
@@ -168,7 +163,6 @@ function saveSession ($session, $organization_id = 95)
 
     $_global_oldest_date = $session['date'];
 
-
     //	Save speeches
     foreach ($session['speeches'] as $speech_date => $speech) {
         $order = 0;
@@ -184,37 +178,49 @@ function saveSession ($session, $organization_id = 95)
                 }
             }
 
-            $speechTable = ($speech['insertToDb'])?'parladata_speechinreview':'parladata_speech';
+            $speechChange = ($speech['insertToDb'])?'parladata_speechinreview':'parladata_speech';
 
-            $sql = "
-				INSERT INTO
-					$speechTable
-				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id)
-				VALUES
-				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "')
-			";
-            pg_query($conn, $sql);
 
-            if($speechTable == 'parladata_speech'){
-                //update relation
+            /*
+            1.1. valid_from - date_start
+            1.2. valid_to - infinity
+
+            after changed status, in_review = false
+
+            1.2. valid_to - date_start
+            2.1. valid_from - date_start
+            2.2. valid_to - infinity
+             * */
+
+            if ($session['review_ext'] == 1 && $session['review'] == 0) {
 
                 $sqlUpdate = "
-
-UPDATE parladata_speech SET in_review_rel_id = speechinreview.id
-FROM (
-  SELECT id
-  FROM parladata_speechinreview
-  WHERE speaker_id =
-        AND \"order\" = '" . $order . "'
-        AND session_id = '" . $session_id . "'
-        AND AND CAST(start_time AS DATE) = '" . $speech_date . "'
-        AND party_id = '" . getPersonOrganization($talk['id']) . "'
-) as speechinreview
-;                
+                UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
                 ";
                 pg_query($conn, $sqlUpdate);
 
+                $sqlInsertAgain = "
+				INSERT INTO
+					parladata_speech
+				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
+				VALUES
+				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
+			";
+                pg_query($conn, $sqlInsertAgain);
+
+            }else if($session['review_ext'] == 1 && $session['review'] == 1){
+
+            }else{
+                $sql = "
+				INSERT INTO
+					parladata_speech
+				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
+				VALUES
+				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
+			";
+                pg_query($conn, $sql);
             }
+
 
             $reportData["parladata_speech"][] = array($talk['id'], $speech_date);
         }

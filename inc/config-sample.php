@@ -92,3 +92,5 @@ define('MAILGUN_FROM', ''); //Excited User <YOU@YOUR_DOMAIN_NAME>
 $MAILGUN_TO = array('klemensek@gmail.com');
 
 $reportData = array();
+
+define ('VAR_DUMP', true);
