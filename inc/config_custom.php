@@ -12,24 +12,30 @@
 //	Env settings
 ini_set ('max_execution_time', 7200);
 ini_set ('default_socket_timeout', 180);
+ini_set ('memory_limit', '2048M');
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
 
 //  [SETTING] Logging
 define ('LOG_PATH', 'log/trace.log');
+define ('FILTE_PATH', 'file/file.log');
 define ('LOGGING', true);
 ini_set('error_log', 'log/php.log');
 
 //	Includes
 include_once 'simple_html_dom.php';
+include_once 'checkSpeeches.php';
+include_once 'getFunctions.php';
+include_once 'parseFunctions.php';
+include_once 'saveFunctions.php';
 include_once 'functions.php';
 
 //	[SETTING] Database settings
 define ('PG_HOST',	'127.0.0.1');
 define ('PG_PORT',	5432);
-define ('PG_USER',	'postgres');
-define ('PG_PASS',	'postgres');
-define ('PG_NAME',	'postgres');
+define ('PG_USER',	'parladaddy');
+define ('PG_PASS',	'razvrat');
+define ('PG_NAME',	'p6');
 
 //  [SETTING] Notification/admin mail address
 define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
@@ -45,23 +51,13 @@ define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/v1/dokumenti/');
 
 //  [SETTING] Execute script after finish - script to execute using exec() function. Careful!
 define ('ON_IMPORT_EXEC_SCRIPT', ''); // it uses sprintf() with $_global_oldest_date as second variable
+//define ('EXEC_SCRIPT_RUNNER', '/home/parladaddy/parlalize/runner.sh');
 define ('EXEC_SCRIPT_RUNNER', '');
 $_global_oldest_date = null;
-
-//  [SETTING] Skip session if any draft message is found
-define ('SKIP_WHEN_REVIEWS', false);
-
-//  [SETTING] Want to recrawl speaches for sessions that were in review last time?
-define ('UPDATE_SESSIONS_IN_REVIEW', false);
 
 //  [SETTING] Classifications for DTs
 $dtclassifs = ['odbor','komisija','kolegij'];
 define ('DT_CLASSIF', json_encode($dtclassifs));
-
-//  [SETTINGS] Parser settings
-define ('PARSE_SPEECHES', true);
-define ('PARSE_VOTES', true);
-define ('PARSE_DOCS', true);
 
 //  [SETTING] Optional delay between requests in seconds
 define ('FETCH_TIMEOUT', 0);
@@ -79,16 +75,17 @@ define ('CURRENT_SESSION', 'VII');
 $conn = pg_connect("host=".PG_HOST." port=".PG_PORT." dbname=".PG_NAME." user=".PG_USER." password=".PG_PASS);
 if (!$conn) die ('Cannot connect to DB');
 
+
 $http_response_header = null;
 
-define('SMS_USER', '');
-define('SMS_PASS', '');
+define('SMS_USER', 'primoz_klemensek');
+define('SMS_PASS', 'f85473526eff3d96622751178f57886bfc29db51ea');
 define('SMS_FROM', "031583610");
 $SMS_TO = array("031583610");
 
-define('MAILGUN_KEY', '');
-define('MAILGUN_DOMAIN', '');
-define('MAILGUN_FROM', ''); //Excited User <YOU@YOUR_DOMAIN_NAME>
+define('MAILGUN_KEY', 'key-0rr45z7eu1hy1icm645xz7fn5xegbcf0');
+define('MAILGUN_DOMAIN', 'sandbox8d444a91a3c445c593b78d5d70008039.mailgun.org');
+define('MAILGUN_FROM', 'ParlaParser <klemensek@gmail.com>'); //Excited User <YOU@YOUR_DOMAIN_NAME>
 $MAILGUN_TO = array('klemensek@gmail.com');
 
 $reportData = array();
