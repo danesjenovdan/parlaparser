@@ -35,7 +35,7 @@ define ('PG_HOST',	'127.0.0.1');
 define ('PG_PORT',	5432);
 define ('PG_USER',	'parladaddy');
 define ('PG_PASS',	'***REMOVED***');
-define ('PG_NAME',	'p5');
+define ('PG_NAME',	'p6');
 
 //  [SETTING] Notification/admin mail address
 define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
@@ -89,3 +89,5 @@ define('MAILGUN_FROM', 'ParlaParser <***REMOVED***>'); //Excited User <YOU@YOUR_
 $MAILGUN_TO = array('***REMOVED***');
 
 $reportData = array();
+
+define ('VAR_DUMP', true);
