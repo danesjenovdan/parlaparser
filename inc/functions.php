@@ -1,7 +1,4 @@
 <?php
-
-
-
 /**
  * Translate string to ascii
  *
@@ -152,4 +149,10 @@ function sendSms($message){
         curl_close($ch);
     }
     return $result;
+}
+
+function var_dumpp($in){
+    if(VAR_DUMP){
+        var_dump($in);
+    }
 }
