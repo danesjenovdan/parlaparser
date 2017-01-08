@@ -76,7 +76,6 @@ function downloadPage ($url)
 }
 
 
-use Mailgun\Mailgun;
 function sendReport($customText=null){
 
     global $MAILGUN_TO, $reportData;
@@ -108,8 +107,6 @@ function sendReport($customText=null){
         $result = $mailgun->sendMessage($domain, array(
             'from' => MAILGUN_FROM,
             'to' => $item,
-            //'cc'      => 'baz@example.com',
-            //'bcc'     => 'bar@example.com',
             'subject' => 'ParlameterParser Report',
             'text' => strip_tags($html),
             'html' => $html
