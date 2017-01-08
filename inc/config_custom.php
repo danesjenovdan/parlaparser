@@ -15,7 +15,7 @@ ini_set ('default_socket_timeout', 180);
 ini_set ('memory_limit', '2048M');
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
-
+error_reporting(0);
 //  [SETTING] Logging
 define ('LOG_PATH', 'log/trace.log');
 define ('FILTE_PATH', 'file/file.log');
@@ -90,4 +90,4 @@ $MAILGUN_TO = array('***REMOVED***');
 
 $reportData = array();
 
-define ('VAR_DUMP', true);
+define ('VAR_DUMP', false);

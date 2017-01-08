@@ -147,6 +147,13 @@ function parseSessionsList($content, $organization_id)
                                 $tmp['documents'][] = parseDocument(DZ_URL . $doc->href);
                                 sleep(FETCH_TIMEOUT);
 
+                                if(empty($tmp['id'])){
+                                    var_dump($tmp['link_noid']);
+                                    //continue 2;
+                                }
+                                var_dump("documetn parse" . $tmp['id']);
+
+
                             } else {
                                 if (SKIP_WHEN_REVIEWS) continue 2;
                             }
@@ -251,7 +258,6 @@ function parseSessionsDT($url)
         ), $gov_key);
     }
 }
-
 
 /**
  * Parses sessions, fetching speeches, votes, documents
@@ -583,6 +589,12 @@ function parseDocument($url)
 }
 
 
+/**
+ * @param $content
+ * @param $organization_id
+ * @param $sessionData
+ * @return bool
+ */
 function parseSessionsSingle($content, $organization_id, $sessionData)
 {
     $session = str_get_html($content);
@@ -691,7 +703,6 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                 }
             }
         }
-
 
         $tmp['documents'] = array();
         if (PARSE_DOCS) {
