@@ -273,7 +273,10 @@ function getAllVotes()
 }
 
 
-
+/**
+ * @param $session_id
+ * @return array|bool
+ */
 function getSessionById($session_id){
     global $conn;
 
