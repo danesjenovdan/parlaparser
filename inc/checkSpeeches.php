@@ -1,6 +1,10 @@
 <?php
-
-
+/**
+ * @param $dateStart
+ * @param $sessionId
+ * @param $review
+ * @return bool
+ */
 function isSpeechInDb($dateStart, $sessionId, $review){
     global $conn;
 
@@ -28,6 +32,11 @@ function isSpeechInDb($dateStart, $sessionId, $review){
     return false;
 }
 
+/**
+ * @param $sessionId
+ * @param $review
+ * @return bool
+ */
 function isSpeechInReviewStatusChanged($sessionId, $review){
     global $conn;
 
@@ -48,7 +57,6 @@ function isSpeechInReviewStatusChanged($sessionId, $review){
             return true;
         }
     }
-
 
     return true;
 }

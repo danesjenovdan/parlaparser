@@ -301,7 +301,7 @@ function saveSession ($session, $organization_id = 95)
                 }
             }
         }
-
+        var_dump("documetn save");
         //	Save documents
         foreach ($session['documents'] as $document) {
             if (!empty($document['link'])) {
@@ -315,7 +315,7 @@ function saveSession ($session, $organization_id = 95)
                 pg_query ($conn, $sql);
 
                 $reportData["parladata_link"][] = array($document['title']);
-
+                var_dump("documetn saveok");
                 //  Download documents
                 if (DOC_DOWNLOAD) {
                     file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
@@ -357,7 +357,6 @@ function addPerson ($name)
             'name_parser' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")
         );
         $people_new[$name] = $person_id;
-//		$people = getPeople ();
 
         $reportData["person"][] = array($person_id, $name);
 
