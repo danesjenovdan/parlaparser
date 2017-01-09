@@ -42,16 +42,18 @@ function parserShutdown ()
  * @param string $url URL to fetch
  * @return mixed Fetched content or false
  */
-function downloadPage ($url)
+function downloadPage ($url, $ctx = null)
 {
     global $http_response_header;
 	$content = false;
 	$errcnt = 0;
-	$ctx = stream_context_create(array('http'=>
-		array(
-			'timeout' => 5,
-		)
-	));
+	if(is_null($ctx)) {
+        $ctx = stream_context_create(array('http' =>
+            array(
+                'timeout' => 5,
+            )
+        ));
+    }
 	while($content == false && $errcnt < 10)
 	{
 		if ($errcnt > 0) {
