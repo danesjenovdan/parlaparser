@@ -334,6 +334,8 @@ function parseData($data, $cookiess)
     $findalData = array();
     $outputText = $data->find('.form .outputText');
 
+    $pobudaNaslov = $data->find('.form .outputText', 1)->text();
+
     $removeData = array('Datum:&#160;', 'Avtor:&#160;', 'Dokument:&#160;','Datum:&nbsp;', 'Avtor:&nbsp;', 'Dokument:&nbsp;');
 
     foreach ($outputText as $item) {
@@ -354,7 +356,7 @@ function parseData($data, $cookiess)
     $pobuda[$pobudaKey]["links"][] = array(
         'date' => translateCharacters($findalData[1]),
         'url' => translateCharacters($url),
-        'name' => translateCharacters($findalData[3])
+        'name' => translateCharacters($pobudaNaslov)
     );
 /*
     var_dump($pobuda);
@@ -368,21 +370,21 @@ function sendDataToKunst($pobuda, $pobudaKey, $data){
     file_put_contents("log/first.txt", print_r($data, true), FILE_APPEND);
 
 
-//    $url = 'https://data.parlameter.si/v1/addQuestion/';
-//
-//    $ch = curl_init();
-//    curl_setopt($ch, CURLOPT_URL, $url);
-//    curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-//    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-//    //curl_setopt($ch, CURLOPT_POST, 1);
-//    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-//    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-//    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
-//
-//    $result = curl_exec($ch);
-//    curl_close($ch);
-//
-//    file_put_contents("log/first.txt", print_r($result, true), FILE_APPEND);
+    $url = 'https://data.parlameter.si/v1/addQuestion/';
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    //curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
+
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    file_put_contents("log/first.txt", print_r($result, true), FILE_APPEND);
 
     var_dump($pobudaKey);
 
@@ -449,11 +451,11 @@ function mapperSumniki($in){
 
 }
 
-for ($i = 1; $i<35; $i++){
+for ($i = 1; $i<36; $i++){
     parseQuestionStart(array('http://www.dz-rs.si/wps/portal/Home/deloDZ/poslanskaVprasanjaInPobude/'), $i, 1);
     parseQuestionStart(array('http://www.dz-rs.si/wps/portal/Home/deloDZ/poslanskaVprasanjaInPobude/'), $i, 2);
     parseQuestionStart(array('http://www.dz-rs.si/wps/portal/Home/deloDZ/poslanskaVprasanjaInPobude/'), $i, 3);
-    die();
+    //die();
 }
 
 
