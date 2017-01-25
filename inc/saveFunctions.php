@@ -227,6 +227,22 @@ function saveSession ($session, $organization_id = 95)
 
             }else if($session['review_ext'] == 1 && $session['review'] == 1){
 
+                if(PARSE_SPEECHES_FORCE){
+                    $sqlUpdate = "
+                UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
+                ";
+                    pg_query($conn, $sqlUpdate);
+
+                    $sqlInsertAgain = "
+				INSERT INTO
+					parladata_speech
+				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
+				VALUES
+				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
+			";
+                    pg_query($conn, $sqlInsertAgain);
+                }
+
             }else{
                 $sql = "
 				INSERT INTO
