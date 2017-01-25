@@ -379,3 +379,24 @@ function sessionDeletedById($session_id)
     }
     return false;
 }
+
+
+
+function getAllSessions()
+{
+    global $conn;
+
+    $sql = "
+		SELECT
+			*
+		FROM
+			parladata_session
+	";
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+            $array[] = $row;
+        }
+    }
+    return $array;
+}
