@@ -46,14 +46,15 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
         }
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
-            if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
-                return false;
-            }
+//            if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
+//                return false;
+//            }
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
         }
         var_dumpp($tmp);
         var_dumpp($exists);
+
 
 
         //	Retrieve cookies
@@ -75,7 +76,8 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 
         // Parse voting data
         $tmp['voting'] = array();
-        if (PARSE_VOTES) {
+        //if (PARSE_VOTES) {
+        if (true) {
             var_dump("VOTES");
             //  Search on DT page or not TODO: better solution needed
             preg_match('/form id="(.*?):form1"/', $session, $fmatches);
@@ -144,7 +146,7 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                 }
                             }
                             $votDco = $tmp['votingDocument'];
-                            file_put_contents("gitignore/doccache.txt", serialize($votDco));
+                            file_put_contents("gitignore/doccache_".$tmp['id'].".txt", serialize($votDco));
                             var_dump($tmp['votingDocument']);
                         }
                     }
