@@ -296,3 +296,86 @@ function getSessionById($session_id){
     }
     return false;
 }
+
+function getSessionsShared()
+{
+    global $conn;
+
+    $sql = "
+		SELECT
+			*
+		FROM
+			parladata_session
+		WHERE
+			name like '%skupna seja%'
+	";
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+            $array[] = $row;
+        }
+    }
+    return $array;
+}
+
+function sessionDeleted($session_id)
+{
+    global $conn;
+
+    $sql = "
+		SELECT
+			id,
+			in_review
+		FROM
+			parladata_session_deleted
+		WHERE
+			gov_id = '" . pg_escape_string ($conn, $session_id) . "'
+	";
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        if (pg_num_rows ($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+    /*
+CREATE TABLE parladata_session_deleted
+(
+    id INTEGER PRIMARY KEY NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    name VARCHAR(255),
+    gov_id VARCHAR(255),
+    start_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    organization_id INTEGER,
+    classification VARCHAR(128),
+    mandate_id INTEGER,
+    in_review BOOLEAN NOT NULL
+);
+
+ GRANT ALL PRIVILEGES ON TABLE parladata_session_deleted TO parladaddy;
+
+     */
+}
+function sessionDeletedById($session_id)
+{
+    global $conn;
+
+    $sql = "
+		SELECT
+			id,
+			in_review
+		FROM
+			parladata_session_deleted
+		WHERE
+			id = '" . pg_escape_string ($conn, $session_id) . "'
+	";
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        if (pg_num_rows ($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
