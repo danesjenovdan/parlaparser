@@ -18,7 +18,7 @@ sendReport(date("Ym-m-d H:i:s"));
 // Jože požen
 $urls = array (
     'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/redne',
-    'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
+    //'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
 );
 parseSessions ($urls, 95);
 

@@ -48,7 +48,9 @@ function parseSessionsList($content, $organization_id)
 
         if ($date < new DateTime('NOW')) {
 
-
+            if(sessionDeleted($session_nouid)){
+                continue;
+            }
             // Check if session already imported
             if ($exists = sessionExists($session_nouid)) {
                 if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) continue;
@@ -535,6 +537,116 @@ function parseVotes($url)
     return $array;
 }
 
+
+function parseVotesDocument($url, $voteDate, $sessionId, $organizationId, $naslov, $dokument)
+{
+    $data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
+    // Log
+    logger('FETCH VOTES: ' . $url);
+
+    $documentsData = array();
+
+    if($data->find('.listNoBtn')){
+        $documentsData = parseVotesDocumentList($data);
+    }else{
+        $documentsData[] = parseVotesDocumentSingle($data, null);
+    }
+
+    return array($voteDate, $sessionId, $organizationId, $documentsData, $naslov, $dokument);
+}
+
+
+function parseVotesDocumentList($documentsData)
+{
+    $data = array();
+    $potencialLinks = $documentsData->find('.listNoBtn');
+    foreach ($potencialLinks as $potencialLink) {
+        $links = $potencialLink->find('a');
+        foreach ($links as $link) {
+            $url = $link->href;
+            $data[] = parseVotesDocumentSingle(null, $url);
+
+        }
+        break;
+    }
+
+    return $data;
+}
+function parseVotesDocumentSingle($data, $url = null)
+{
+    sleep(FETCH_TIMEOUT);
+    if(!is_null($url)) {
+        $data = str_get_html(downloadPage(DZ_URL . str_replace('&amp;', '&', $url)));
+        // Log
+        logger('FETCH VOTES: ' . $url);
+    }
+
+    if(is_null($data)){
+        return false;
+    }
+
+    if(!($data->find('h2', 0))){
+        return false;
+    }
+
+    var_dump($url);
+    $note = $data->find('h2', 0)->text();
+    $epa = null;
+    $naslov1 = null;
+    $naslov2 = null;
+    $urlName = null;
+    $urlLink = null;
+
+    $tableTr = $data->find('.form table tr td');
+    foreach ($tableTr as $item) {
+
+        var_dump($item->text());
+
+        if(stripos($item->text(), 'EPA:') !== false) {
+            $t = explode(': ', $item->text());
+            //var_dump($t);die();
+            $epa = html_entity_decode(trim($t[1]));
+        }
+
+        if(stripos($item->text(), 'Naslov:') !== false) {
+            $t = explode(': ', $item->text());
+            $naslov1 = html_entity_decode(trim($t[1]));
+        }
+
+        if(stripos($item->text(), 'Naslov zadeve') !== false) {
+            $t = explode(': ', $item->text());
+            $naslov2 = trim($t[1]);
+        }
+
+        if(stripos($item->innertext(), 'window.open') !== false) {
+            $a = $item->find('a', 0);
+            $urlName = $a->text();
+            $urlLink = str_replace('window.open(\'', '', $a->onclick);
+            $urlLink = substr($urlLink, 0, strpos($urlLink, "'"));
+        }
+
+    }
+
+    var_dump("end of vote doc");
+
+    var_dump(array(
+        'name' => $naslov1 . ' | ' .$naslov2,
+        'note' => $note,
+        'epa' => $epa,
+        'urlName' => $urlName,
+        'urlLink' => $urlLink
+    ));
+
+
+    return array(
+        'name' => $naslov1 . ' | ' .$naslov2,
+        'note' => $note,
+        'epa' => $epa,
+        'urlName' => $urlName,
+        'urlLink' => $urlLink
+    );
+}
+
 /**
  * Find documents on URL
  *
@@ -620,6 +732,9 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
     if ($date < new DateTime('NOW')) {
 
+        if(sessionDeleted($session_nouid)){
+            return false;
+        }
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
             if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
@@ -726,6 +841,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         // Parse voting data
         $tmp['voting'] = array();
         if (PARSE_VOTES) {
+            var_dump("VOTES");
             //  Search on DT page or not TODO: better solution needed
             preg_match('/form id="(.*?):form1"/', $session, $fmatches);
             $form_id = $fmatches[1];
@@ -773,12 +889,41 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                         $votearea = str_get_html($subpage)->find('table.dataTableExHov', 0);
                         if (!empty ($votearea)) {
 
-                            foreach ($votearea->find('tbody td a.outputLink') as $votes) {
-                                if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
-                                    $tmp['voting'][] = parseVotes(DZ_URL . $votes->href);
-                                    sleep(FETCH_TIMEOUT);
+                            foreach ($votearea->find('tbody tr') as $votesResults) {
+
+                                $voteLinkExists = false;
+                                $voteDate = false;
+                                $parseVotes = null;
+
+                                $votes = $votesResults->find('td a.outputLink');
+                                foreach ($votes as $vote) {
+                                    if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $vote->text())) {
+                                        $parseVotes = parseVotes(DZ_URL . $vote->href);
+                                        $tmp['voting'][] = $parseVotes;
+                                        sleep(FETCH_TIMEOUT);
+                                        $voteLinkExists = true;
+                                        $voteDate = trim($vote->text());
+                                    }
+                                }
+
+                                if($voteLinkExists) {
+
+                                    if (stripos($votes[3]->text(), "-") !== false) {
+                                        $tmp['votingDocument'][] = parseVotesDocument(DZ_URL . $votes[3]->href, $voteDate,
+                                            $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"] );
+
+
+                                        //var_dump($tmp['votingDocument']);                                        die();
+
+
+                                        sleep(FETCH_TIMEOUT);
+                                    }
                                 }
                             }
+                            $votDco = $tmp['votingDocument'];
+                            file_put_contents("gitignore/doccache.txt", serialize($votDco));
+                            var_dump($tmp['votingDocument']);
+                            die();
                         }
                     }
                 }
@@ -788,6 +933,8 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
             }
 
         }
+
+        die('sdf');
 
         //	Test: Izpis podatkov celotne seje
         //print_r ($tmp);
