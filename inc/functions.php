@@ -155,3 +155,9 @@ function var_dumpp($in){
         var_dump($in);
     }
 }
+
+function validateDate($date)
+{
+    $d = DateTime::createFromFormat('d.m.Y', $date);
+    return $d && $d->format('d.m.Y') === $date;
+}

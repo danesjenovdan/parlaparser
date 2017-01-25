@@ -89,6 +89,21 @@ function saveVotes ($session, $organization_id = 95) {
     }
 }
 
+function saveVotesDocuments ($session, $organization_id = 95) {
+
+    // save to link
+
+
+    //tag => 1629-VII
+    //note => h2
+//    name =>
+//    Naslov: Besedilo zakona poslano Uradnemu listu
+//    +
+//    Naslov zadeve: Zakon o spremembah in dopolnitvah Zakona o socialno varstvenih prejemkih
+
+    //foreeach
+
+}
 
 /**
  * Save session to database
@@ -150,6 +165,8 @@ function saveSession ($session, $organization_id = 95)
         if (pg_affected_rows ($result) > 0) {
             $insert_row = pg_fetch_row($result);
             $session_id = $insert_row[0];
+
+            //insertToSessionOrganizations($session_id, $organization_id);
 
             $reportData["parladata_session"][] = array($session_id, $session['date'], $session['name']);
 
@@ -363,4 +380,71 @@ function addPerson ($name)
         return $person_id;
     }
     return 0;
+}
+
+function insertToSessionOrganizations($session_id, $organization_id)
+{
+    global $conn;
+    $sessionOrganizationId = null;
+
+    $sql = "
+			INSERT INTO
+				parladata_session_organizations
+			(session_id, organization_id)
+			VALUES
+			('" . $session_id . "', '" . $organization_id . "' )
+			RETURNING id
+		";
+
+    $result = pg_query($conn, $sql);
+    if($result) {
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $sessionOrganizationId = $insert_row[0];
+        }
+    }
+
+    return $sessionOrganizationId;
+}
+
+function deleteSessionRelation($sessionId)
+{
+    global $conn;
+
+    $sql = "DELETE from parladata_ballot WHERE
+parladata_ballot.vote_id IN (SELECT parladata_vote.id FROM parladata_vote WHERE session_id = '".$sessionId."');";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE FROM parladata_vote WHERE session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_motion WHERE  session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE FROM parladata_link WHERE session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_speech WHERE session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_speechinreview WHERE session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_session_organizations WHERE session_id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_session WHERE id = '".$sessionId."';";
+    $result = pg_query($conn, $sql);
+
+}
+
+function makeSessionBackupInDeleted($sessionId){
+    global $conn;
+
+    $sql = "INSERT into parladata_session_deleted
+    SELECT * from parladata_session WHERE parladata_session.id = ".$sessionId.";
+";
+    var_dump($sql);
+    $result = pg_query($conn, $sql);
+
 }
