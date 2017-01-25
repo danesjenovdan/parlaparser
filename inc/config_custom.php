@@ -15,7 +15,7 @@ ini_set ('default_socket_timeout', 180);
 ini_set ('memory_limit', '2048M');
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
-error_reporting(0);
+error_reporting(E_ALL);
 //  [SETTING] Logging
 define ('LOG_PATH', 'log/trace.log');
 define ('FILTE_PATH', 'file/file.log');
@@ -28,6 +28,7 @@ include_once 'checkSpeeches.php';
 include_once 'getFunctions.php';
 include_once 'parseFunctions.php';
 include_once 'saveFunctions.php';
+include_once 'checkFunctions.php';
 include_once 'functions.php';
 
 //	[SETTING] Database settings
@@ -90,4 +91,4 @@ $MAILGUN_TO = array('klemensek@gmail.com');
 
 $reportData = array();
 
-define ('VAR_DUMP', false);
+define ('VAR_DUMP', true);
