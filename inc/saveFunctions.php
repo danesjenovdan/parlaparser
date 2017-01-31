@@ -125,7 +125,7 @@ function saveSession ($session, $organization_id = 95)
         if ((int)$then->diff(date_create('now'))->format('%a') < NOTIFY_NOSPEECH) {
             // Log
             logger ('SAVING SESSION FAILED: NO SPEECHES');
-            return false;
+        //    return false;
         }
     }
 
@@ -261,13 +261,17 @@ function saveSession ($session, $organization_id = 95)
 
 
 
-    if (empty($session['id'])) {
+    //if (empty($session['id'])) {
 
         //	Save votes
         foreach ($session['voting'] as $voting) {
 
             //	Set name to "dokument" when "naslov" is empty
             $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
+
+            if(motionExists($session_id, $organization_id, $voting['date'], $name)){
+                continue;
+            }
 
             $sql = "
 				INSERT INTO
@@ -334,6 +338,7 @@ function saveSession ($session, $organization_id = 95)
                 }
             }
         }
+    if (empty($session['id'])) {
         var_dump("documetn save");
         //	Save documents
         foreach ($session['documents'] as $document) {
@@ -343,9 +348,9 @@ function saveSession ($session, $organization_id = 95)
 						parladata_link
 					(created_at, updated_at, url, note, organization_id, date, name, session_id)
 					VALUES
-					(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
+					(NOW(), NOW(), '" . pg_escape_string($conn, $document['link']) . "', '" . pg_escape_string($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $document['date']) . "', '" . pg_escape_string($conn, $document['title']) . "', '" . $session_id . "')
 				";
-                pg_query ($conn, $sql);
+                pg_query($conn, $sql);
 
                 $reportData["parladata_link"][] = array($document['title']);
                 var_dump("documetn saveok");
@@ -356,6 +361,7 @@ function saveSession ($session, $organization_id = 95)
             }
         }
     }
+    //}
 }
 
 /**
