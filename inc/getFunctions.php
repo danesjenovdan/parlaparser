@@ -353,8 +353,10 @@ CREATE TABLE parladata_session_deleted
     mandate_id INTEGER,
     in_review BOOLEAN NOT NULL
 );
-
- GRANT ALL PRIVILEGES ON TABLE parladata_session_deleted TO parladaddy;
+CREATE SEQUENCE parladata_session_deleted_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
+ALTER TABLE parladata_session_deleted ALTER COLUMN id SET DEFAULT nextval('parladata_session_deleted_id_seq');
+ALTER SEQUENCE parladata_session_deleted_id_seq OWNED BY parladata_session_deleted.id;
+GRANT ALL PRIVILEGES ON TABLE parladata_session_deleted TO parladaddy;
 
      */
 }
@@ -382,15 +384,17 @@ function sessionDeletedById($session_id)
 
 
 
-function getAllSessions()
+function getAllSessions($limit, $offset)
 {
     global $conn;
 
     $sql = "
-		SELECT
+	SELECT
 			*
 		FROM
 			parladata_session
+      order by id ASC
+limit $limit OFFSET $offset;
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
