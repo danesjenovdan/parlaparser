@@ -4,16 +4,19 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
-$sessions = getAllSessions();
-foreach ($sessions as $session) {
+$all = (1200/5);
+$offset = 5;
+for ($i=0; $i < $all; $i++) {
+    $sessions = getAllSessions(5, ($i*$offset));
+    if (count($sessions) > 0) {
+        foreach ($sessions as $session) {
 
-    if (isset($session['gov_id'])) {
-
-        $content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']));
-        parseSessionsSingleForDoc($content, $session['organization_id'], $session);
-
+            if (isset($session['gov_id'])) {
+                $content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']));
+                parseSessionsSingleForDoc($content, $session['organization_id'], $session);
+            }
+        }
     }
-
 }
 
 function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
@@ -133,9 +136,15 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                     }
                                 }
 
+
+
                                 if($voteLinkExists) {
 
                                     if (stripos($votes[3]->text(), "-") !== false) {
+                                        if(voteLinkExists($tmp['id'], $tmp['link'], $votes[3]->href)){
+                                            continue;
+                                        }
+
                                         $tmp['votingDocument'][] = parseVotesDocument(DZ_URL . $votes[3]->href, $voteDate,
                                             $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"] );
                                         //var_dump($tmp['votingDocument']);
@@ -143,7 +152,10 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 
                                         sleep(FETCH_TIMEOUT);
                                     }
+                                    $voteLinkInsertId = voteLinkInsert($tmp['id'], $tmp['link'], $votes[3]->href);
+                                    var_dump($voteLinkInsertId);
                                 }
+
                             }
                             $votDco = $tmp['votingDocument'];
                             file_put_contents("gitignore/doccache_".$tmp['id'].".txt", serialize($votDco));
