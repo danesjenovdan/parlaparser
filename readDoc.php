@@ -188,6 +188,5 @@ $session_id
 die();
 
 
-//get data from
 
 
