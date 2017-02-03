@@ -78,7 +78,6 @@ function toDate($in){
 
 function findDokument($dokument, $id)
 {
-
     $data = array();
     foreach ($dokument as $doc) {
 
@@ -116,11 +115,93 @@ foreach ($xml->VPRASANJE as $vprasanje) {
     $pobuda["naslovljenec"] = trim($kartica->KARTICA_NASLOVLJENEC);
 
     $dokumenti = $vprasanje->PODDOKUMENTI;
+
+    $allDocs = 0;
     foreach ($dokumenti->UNID as $dokumentUniId) {
-        $pobuda["links"][] = findDokument($dokument, $dokumentUniId);
+
+        $doc = findDokument($dokument, $dokumentUniId);
+
+        if(!questionExists($pobuda["datum"], $pobuda["naslov"], $pobuda["vlagatelj"], $pobuda["naslovljenec"], $doc['url'], $doc['name'])){
+            $pobuda["links"][] = $doc;
+
+            questionInsert($pobuda["datum"], $pobuda["naslov"], $pobuda["vlagatelj"], $pobuda["naslovljenec"], $doc['url'], $doc['name']);
+            ++$allDocs;
+        }
     }
 
-    sendDataToKunst($pobuda);
-    var_dump($pobuda);
+    if($allDocs>0) {
+        sendDataToKunst($pobuda);
+        var_dump($pobuda);
+    }
 }
 
+/*
+CREATE TABLE parladata_tmp_questions
+(
+    id INTEGER PRIMARY KEY NOT NULL,
+    datum VARCHAR(20),
+    naslov TEXT,
+    vlagatelj TEXT,
+    naslovljenec TEXT,
+    url TEXT,
+    docname TEXT
+);
+
+CREATE SEQUENCE parladata_tmp_questions_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
+ALTER TABLE parladata_tmp_questions ALTER COLUMN id SET DEFAULT nextval('parladata_tmp_questions_id_seq');
+ALTER SEQUENCE parladata_tmp_questions_id_seq OWNED BY parladata_tmp_questions.id;
+GRANT ALL PRIVILEGES ON TABLE parladata_tmp_questions TO parladaddy;
+GRANT USAGE, SELECT ON SEQUENCE parladata_tmp_questions_id_seq TO parladaddy;
+ */
+function questionExists($datum, $naslov, $vlagatelj, $naslovljenec, $url, $docname)
+{
+    global $conn;
+
+    $sql = "
+					select * from
+						parladata_tmp_questions
+						where 
+						datum = '" . pg_escape_string($conn, $datum) . "' and
+						naslov = '" . pg_escape_string($conn, $naslov) . "' and
+						vlagatelj = '" . pg_escape_string($conn, $vlagatelj) . "' and 
+						naslovljenec = '" . pg_escape_string($conn, $naslovljenec) . "' and
+						url = '" . pg_escape_string($conn, $url) . "' and
+						docname = '" . pg_escape_string($conn, $docname) . "'
+					;
+				";
+
+    var_dump($sql);
+
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        if (pg_num_rows ($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+function questionInsert($datum, $naslov, $vlagatelj, $naslovljenec, $url, $docname)
+{
+    global $conn;
+
+    $sql = "INSERT INTO parladata_tmp_questions (datum, naslov, vlagatelj, naslovljenec, url, docname) VALUES (
+'" . pg_escape_string($conn, $datum) . "', 
+						'" . pg_escape_string($conn, $naslov) . "', 
+						'" . pg_escape_string($conn, $vlagatelj) . "',  
+						'" . pg_escape_string($conn, $naslovljenec) . "', 
+						'" . pg_escape_string($conn, $url) . "', 
+						'" . pg_escape_string($conn, $docname) . "'
+);";
+
+    var_dump($sql);
+
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        if (pg_num_rows ($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+
+
+}
