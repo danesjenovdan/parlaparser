@@ -4,7 +4,7 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
-$session = getSessionById(7654);
+$session = getSessionById(5585);
 
 $content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']));
 parseSessionsSingleForDoc($content, $session['organization_id'], $session);
