@@ -8,45 +8,60 @@ require 'vendor/autoload.php';
 include_once('inc/config_custom.php');
 
 
+////$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
+//$votDco = unserialize(file_get_contents("gitignore/doccache_7654.txt"));
+//
+////foreach ($votDco as $item) {
+////    print_r($item);
+////    echo "\n";
+////}
+////die();
+////var_dump($votDco); die();
 
-//$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
-$votDco = unserialize(file_get_contents("gitignore/doccache_7654.txt"));
+$dir = 'gitignore/';
+$doccacheFiles = scandir($dir);
+foreach ($doccacheFiles as $doccacheFile) {
 
-//foreach ($votDco as $item) {
-//    print_r($item);
-//    echo "\n";
-//}
-//die();
-//var_dump($votDco); die();
+    if(stripos($doccacheFile, "doccache_") !== false){
 
-
-foreach ($votDco as $item) {
-
-    $organization_id = $item[2];
-    $session_id = $item[1];
-    //$date = $item[0];
-    $name = (!empty ($item[5])) ? $item[5] . ' - ' . $item[4] : $item[4];
-
-    if(!validateDate($item[0])){
-        continue;
-    }
-    $date = DateTime::createFromFormat('d.m.Y', $item[0])->format('Y-m-d');
-
-    $motion = findExistingMotion($organization_id, $session_id, $date, $name);
-
-    $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
-
-    if($motionId){
-        $id = insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $item);
-        print_r("inserted: ");
-        print_r($id);
-    }else{
-        print_r("nogo");
-        //var_dump($item);
+        $votDco = unserialize(file_get_contents($dir.$doccacheFile));
+        readCacheFromFile($votDco);
     }
 
-    //die();
+}
 
+
+function readCacheFromFile($votDco)
+{
+
+    foreach ($votDco as $item) {
+
+        $organization_id = $item[2];
+        $session_id = $item[1];
+        //$date = $item[0];
+        $name = (!empty ($item[5])) ? $item[5] . ' - ' . $item[4] : $item[4];
+
+        if (!validateDate($item[0])) {
+            continue;
+        }
+        $date = DateTime::createFromFormat('d.m.Y', $item[0])->format('Y-m-d');
+
+        $motion = findExistingMotion($organization_id, $session_id, $date, $name);
+
+        $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
+
+        if ($motionId) {
+            $id = insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $item);
+            print_r("inserted: ");
+            print_r($id);
+        } else {
+            print_r("nogo");
+            //var_dump($item);
+        }
+
+        //die();
+
+    }
 }
 
 function findExistingMotion($organization_id, $session_id, $date, $name)
