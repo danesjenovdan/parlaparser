@@ -9,9 +9,15 @@ include_once('inc/config_custom.php');
 
 
 
-$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
+//$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
+$votDco = unserialize(file_get_contents("gitignore/doccache_7654.txt"));
 
-//var_dump($votDco);
+//foreach ($votDco as $item) {
+//    print_r($item);
+//    echo "\n";
+//}
+//die();
+//var_dump($votDco); die();
 
 
 foreach ($votDco as $item) {
@@ -26,18 +32,20 @@ foreach ($votDco as $item) {
     }
     $date = DateTime::createFromFormat('d.m.Y', $item[0])->format('Y-m-d');
 
-    $founded = findExistingMotion($organization_id, $session_id, $date, $name);
+    $motion = findExistingMotion($organization_id, $session_id, $date, $name);
 
-    if($founded){
-        $id = insertVotingDocument($organization_id, $session_id, $date, $name, $item);
-        var_dump("inserted: ");
-        var_dump($id);
+    $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
+
+    if($motionId){
+        $id = insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $item);
+        print_r("inserted: ");
+        print_r($id);
     }else{
-        var_dump("nogo");
+        print_r("nogo");
         //var_dump($item);
     }
 
-    die();
+    //die();
 
 }
 
@@ -56,19 +64,19 @@ function findExistingMotion($organization_id, $session_id, $date, $name)
 			;
 		";
 
-    var_dump($sql);
+    print_r($sql);
 
     $result = pg_query ($conn, $sql);
     $mResultArray = null;
     if ($result) {
         if (pg_num_rows($result) > 0) {
-            return true;
+            return pg_fetch_assoc($result);
         }
     }
     return false;
 }
 
-function insertVotingDocument($organization_id, $session_id, $date, $name, $items)
+function insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $items)
 {
     global $conn;
     $return = array();
@@ -77,8 +85,12 @@ function insertVotingDocument($organization_id, $session_id, $date, $name, $item
         foreach ($items[3] as $item) {
 
 
+            if(empty($item['urlName']) && empty($item['urlLink'])){
+                continue;
+            }
 
-            if(findExistingDocument($organization_id, $session_id, $date, $name, $item)){
+            if(documentLinkExists($motionId, $organization_id, $session_id, $date, $name, $item)){
+                print_r("getLinkDocument EXIST");
                 continue;
             }
             $name = $item['name'];
@@ -90,9 +102,9 @@ function insertVotingDocument($organization_id, $session_id, $date, $name, $item
             $sql = "
 					INSERT INTO
 						parladata_link
-					(created_at, updated_at, url, note, organization_id, date, name, session_id )
+					(created_at, updated_at, url, note, organization_id, date, name, session_id, motion_id )
 					VALUES
-					(NOW(), NOW(), '" . pg_escape_string($conn, $urlLink) . "', '" . pg_escape_string($conn, $urlName) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $date) . "', '" . pg_escape_string($conn, $name) . "', '" . $session_id . "')
+					(NOW(), NOW(), '" . pg_escape_string($conn, $urlLink) . "', '" . pg_escape_string($conn, $urlName) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $date) . "', '" . pg_escape_string($conn, $name) . "', '" . $session_id . "', '" . $motionId . "')
 					RETURNING id
 				";
             $result = pg_query($conn, $sql);
@@ -110,7 +122,7 @@ function insertVotingDocument($organization_id, $session_id, $date, $name, $item
 return $return;
 }
 
-function findExistingDocument($organization_id, $session_id, $date, $name, $item){
+function documentLinkExists($motionId, $organization_id, $session_id, $date, $name, $item){
     global $conn;
     $return = array();
 
@@ -125,17 +137,17 @@ function findExistingDocument($organization_id, $session_id, $date, $name, $item
 						note = '" . pg_escape_string($conn, $urlName) . "' and
 						organization_id = '" . $organization_id . "' and 
 						date = '" . pg_escape_string($conn, $date) . "' and
-						session_id = '" . $session_id . "'
+						session_id = '" . $session_id . "' and
+						motion_id = '" . $motionId . "'
 					;
 				";
 //			name = '" . pg_escape_string($conn, $name) . "' and
 
-    var_dump($sql, true);
+    print_r($sql);
 
     $result = pg_query ($conn, $sql);
     $mResultArray = null;
     if ($result) {
-        var_dump(pg_num_rows($result));
         if (pg_num_rows($result) > 0) {
             return true;
         }
@@ -163,12 +175,12 @@ function deleteExistingDocument($organization_id, $session_id, $date, $name, $it
 					;
 				";
 
-    var_dump($sql, true);
+    print_r($sql);
 
     $result = pg_query ($conn, $sql);
     $mResultArray = null;
     if ($result) {
-        var_dump(pg_num_rows($result));
+        print_r(pg_num_rows($result));
         if (pg_num_rows($result) > 0) {
             return true;
         }
