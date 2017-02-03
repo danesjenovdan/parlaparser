@@ -636,17 +636,17 @@ function parseVotesDocumentSingle($data, $url = null)
 
         if(stripos($item->text(), 'Naslov:') !== false) {
             $t = explode(': ', $item->text());
-            $naslov1 = html_entity_decode(trim($t[1]));
+            $naslov1 = asciireplace(html_entity_decode(trim($t[1])));
         }
 
         if(stripos($item->text(), 'Naslov zadeve') !== false) {
             $t = explode(': ', $item->text());
-            $naslov2 = trim($t[1]);
+            $naslov2 = asciireplace(trim($t[1]));
         }
 
         if(stripos($item->innertext(), 'window.open') !== false) {
             $a = $item->find('a', 0);
-            $urlName = $a->text();
+            $urlName = asciireplace($a->text());
             $urlLink = str_replace('window.open(\'', '', $a->onclick);
             $urlLink = substr($urlLink, 0, strpos($urlLink, "'"));
         }
