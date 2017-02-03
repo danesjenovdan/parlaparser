@@ -4,6 +4,12 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
+$session = getSessionById(7654);
+
+$content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']));
+parseSessionsSingleForDoc($content, $session['organization_id'], $session);
+die();
+
 $all = (66/2);
 $offset = 2;
 $limit = 2;
