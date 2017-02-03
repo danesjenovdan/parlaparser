@@ -161,3 +161,16 @@ function validateDate($date)
     $d = DateTime::createFromFormat('d.m.Y', $date);
     return $d && $d->format('d.m.Y') === $date;
 }
+
+function asciireplace($in){
+    $search = array();
+    $replace = array();
+    $search[] = '&#382;';
+    $replace[] = 'ž';
+    $search[] = '&#353;';
+    $replace[] = 'š';
+    $search[] = '&#269;';
+    $replace[] = 'č';
+    $search[] = '&#171;';
+    $replace[] = 'č';
+}
