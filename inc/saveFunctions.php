@@ -145,13 +145,6 @@ function saveSession($session, $organization_id = 95)
 
         $session_id = $session['id'];
 
-//            $sql = "
-//			DELETE FROM
-//				parladata_speech
-//			WHERE
-//				session_id = '" . (int)$session_id . "'
-//		";
-//            pg_query($conn, $sql);
 
     } else {
         $sql = "
@@ -450,9 +443,6 @@ parladata_ballot.vote_id IN (SELECT parladata_vote.id FROM parladata_vote WHERE 
     $sql = "DELETE from parladata_speech WHERE session_id = '" . $sessionId . "';";
     $result = pg_query($conn, $sql);
 
-    $sql = "DELETE from parladata_speechinreview WHERE session_id = '" . $sessionId . "';";
-    $result = pg_query($conn, $sql);
-
     $sql = "DELETE from parladata_session_organizations WHERE session_id = '" . $sessionId . "';";
     $result = pg_query($conn, $sql);
 
@@ -465,10 +455,21 @@ function makeSessionBackupInDeleted($sessionId)
 {
     global $conn;
 
-    $sql = "INSERT into parladata_session_deleted
-    SELECT * from parladata_session WHERE parladata_session.id = " . $sessionId . ";
+    $sql = "INSERT INTO parladata_session_deleted (id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review)
+    SELECT id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review from parladata_session
+    WHERE parladata_session.id = " . $sessionId . ";
 ";
     var_dump($sql);
     $result = pg_query($conn, $sql);
 
+    $sessionInsertedId = 0;
+    if ($result) {
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $sessionInsertedId = $insert_row;
+        }
+    }
+
+    var_dump($sessionInsertedId);
+    return $sessionInsertedId;
 }

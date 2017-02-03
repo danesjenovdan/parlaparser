@@ -4,10 +4,11 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
-$all = (1200/5);
-$offset = 5;
+$all = (66/2);
+$offset = 2;
+$limit = 2;
 for ($i=0; $i < $all; $i++) {
-    $sessions = getAllSessions(5, ($i*$offset));
+    $sessions = getAllSessionsByOrganizationId(95, $limit, ($i*$offset));
     if (count($sessions) > 0) {
         foreach ($sessions as $session) {
 
@@ -150,7 +151,7 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                         //var_dump($tmp['votingDocument']);
                                         //die();
 
-                                        sleep(FETCH_TIMEOUT);
+                                        sleep(1);
                                     }
                                     $voteLinkInsertId = voteLinkInsert($tmp['id'], $tmp['link'], $votes[3]->href);
                                     var_dump($voteLinkInsertId);
@@ -163,7 +164,6 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                 file_put_contents("gitignore/doccache_" . $tmp['id'] . ".txt", serialize($votDco));
                                 var_dump($tmp['votingDocument']);
                             }
-
                         }
                     }
                 }
