@@ -154,7 +154,7 @@ function voteLinkInsert($session_id, $gov_id, $url)
 			(created_at, updated_at, session_id, gov_id, votedoc_url)
 			VALUES
 			(NOW(), NOW(), '" . $session_id . "', '" . pg_escape_string ($conn, $gov_id) . "', '" . pg_escape_string ($conn, $url) . "')
-			
+			RETURNING id
     ";
 
     $voting_id = 0;
