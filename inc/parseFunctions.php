@@ -628,8 +628,6 @@ function parseVotesDocumentSingle($data, $url = null)
     $tableTr = $data->find('.form table tr td');
     foreach ($tableTr as $item) {
 
-        var_dump($item->text());
-
         if(stripos($item->text(), 'EPA:') !== false) {
             $t = explode(': ', $item->text());
             //var_dump($t);die();

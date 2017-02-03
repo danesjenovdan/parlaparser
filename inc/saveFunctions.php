@@ -473,3 +473,56 @@ function makeSessionBackupInDeleted($sessionId)
     var_dump($sessionInsertedId);
     return $sessionInsertedId;
 }
+
+/*
+CREATE TABLE parladata_parsererrorreport
+(
+    id SERIAL PRIMARY KEY,
+    function VARCHAR(255),
+    text TEXT,
+    datetime DATE DEFAULT now(),
+    comment VARCHAR(255),
+    session_id INT,
+    speech_id INT,
+    link_id INT,
+    motion_id INT,
+    vote_id INT,
+    ballot_id INT
+);
+ */
+function parserReport($function, $text='', $comment='', $session_id=0, $speech_id=0, $link_id=0, $motion_id=0, $vote_id=0, $ballot_id=0){
+
+    global $conn;
+
+    $sql = "
+    INSERT INTO parladata_parsererrorreport
+    (function, text, comment, session_id, speech_id, link_id, motion_id, vote_id, ballot_id) VALUES
+    (
+    '" . pg_escape_string($conn, $function) . "', 
+    '" . pg_escape_string($conn, $text) . "', 
+    '" . pg_escape_string($conn, $comment) . "', 
+    '" . pg_escape_string($conn, $session_id) . "', 
+    '" . pg_escape_string($conn, $speech_id) . "', 
+    '" . pg_escape_string($conn, $link_id) . "', 
+    '" . pg_escape_string($conn, $motion_id) . "', 
+    '" . pg_escape_string($conn, $vote_id) . "', 
+    '" . pg_escape_string($conn, $ballot_id) . "'
+    )
+    RETURNING id
+    ;
+    ";
+
+    var_dump($sql);
+    $result = pg_query($conn, $sql);
+
+    $id = 0;
+    if ($result) {
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $id = $insert_row[0];
+        }
+    }
+
+    var_dump($id);
+    return $id;
+}
