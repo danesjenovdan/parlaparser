@@ -7,9 +7,12 @@ include_once('inc/config.php');
 
 
 $all = (1200/5);
-$offset = 5;
+$all = (66/2);
+$offset = 2;
+$limit = 2;
 for ($i=0; $i < $all; $i++) {
-    $sessions = getAllSessions(5, ($i*$offset));
+    //$sessions = getAllSessions(5, ($i*$offset));
+    $sessions = getAllSessionsByOrganizationId(95, $limit, ($i*$offset));
     if (count($sessions) > 0) {
         foreach ($sessions as $session) {
 
