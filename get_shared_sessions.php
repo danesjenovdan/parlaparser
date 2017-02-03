@@ -8,8 +8,8 @@ require 'vendor/autoload.php';
 include_once('inc/config.php');
 
 
-$sharedSessions = checkSharedSessions();
-//$sharedSessions = unserialize(file_get_contents("gitignore/sharedSessions"));
+//$sharedSessions = checkSharedSessions();
+$sharedSessions = unserialize(file_get_contents("gitignore/sharedSessions"));
 
 $similar = array();
 foreach ($sharedSessions as $item) {
@@ -40,6 +40,7 @@ foreach ($similar as $item) {
         }
 
         $sessionIdsDelete = array_shift($sessionIds);
+
         foreach ($sessionIds as $sessionId) {
             if(sessionDeletedById($sessionId)){
                 continue;
