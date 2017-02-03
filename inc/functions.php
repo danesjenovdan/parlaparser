@@ -171,6 +171,6 @@ function asciireplace($in){
     $replace[] = 'š';
     $search[] = '&#269;';
     $replace[] = 'č';
-    $search[] = '&#171;';
-    $replace[] = 'č';
+
+    return str_replace($search, $replace, $in);
 }
