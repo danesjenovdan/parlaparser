@@ -8,13 +8,29 @@ require 'vendor/autoload.php';
 include_once('inc/config.php');
 
 
-//$sharedSessions = checkSharedSessions();
-$sharedSessions = unserialize(file_get_contents("gitignore/sharedSessions"));
+$sharedSessions = checkSharedSessions(date("Ymd"));
+//$sharedSessions = unserialize(file_get_contents("gitignore/sharedSessions".date("Ymd")));
+
+
+function array_sort_by_column(&$arr, $col, $dir = SORT_ASC) {
+    $sort_col = array();
+    foreach ($arr as $key=> $row) {
+        $sort_col[$key] = $row[$col];
+    }
+
+    array_multisort($sort_col, $dir, $arr);
+}
+
+
+array_sort_by_column($sharedSessions, 'sharedSessionKey');
 
 $similar = array();
 foreach ($sharedSessions as $item) {
     $key = md5($item['sharedSessionKey']);
     $key = $item['sharedSessionKey'];
+
+    print $key . " " . $item["sessionId"] ."\n";
+
     if(!array_key_exists($key, $similar)){
         $similar[$key]["st"] = 1;
         $similar[$key]["sessionIds"] = $item["sessionId"];
@@ -29,9 +45,9 @@ foreach ($sharedSessions as $item) {
 $i = 1;
 foreach ($similar as $item) {
     if($item["st"] > 1){
-        //var_dump($item["sessionIds"]);
-        var_dump($item["organizationId"]);
 
+        var_dump($item["sessionIds"]);
+        var_dump($item["organizationId"]);
         $sessionIds = explode(",", $item["sessionIds"]);
         $sessionId = $sessionIds[0];
         $orgIds = explode(",", $item["organizationId"]);
@@ -51,6 +67,11 @@ foreach ($similar as $item) {
 
 
         $i++;
+    }else{
+
+        $sessionIds = explode(",", $item["sessionIds"]);
+
+        print($sessionIds[0])."\n";
     }
 
 }
