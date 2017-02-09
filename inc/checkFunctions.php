@@ -1,16 +1,22 @@
 <?php
 
 
-function checkSharedSessions()
+function checkSharedSessions($date)
 {
 
     $sharedSession = array();
     $sessionShared = getSessionsShared();
+    //$sessionShared = array(getSessionById(5800));
 
     $stAll = count($sessionShared);
     $i = 0;
 
     foreach ($sessionShared as $item) {
+
+        if(sessionDeletedById($item["id"])){
+            continue;
+        }
+
         $url = html_entity_decode($item["gov_id"]);
         var_dump($url);
 
@@ -29,8 +35,8 @@ function checkSharedSessions()
                 $sharedS = prepareDataSharedSession($urlSklic);
                 $sharedSessionTmp = array("sessionId" => $item["id"], "organizationId" => $item["organization_id"], "data" => $sharedS, "sharedSessionKey"=> implode("", $sharedS));
 
-                file_put_contents("gitignore/sharedSessions", print_r($sharedSessionTmp, true), FILE_APPEND);
-
+                file_put_contents("gitignore/sharedSession".$date, print_r($sharedSessionTmp, true), FILE_APPEND);
+var_dump($sharedSessionTmp);
                 $sharedSession[] = $sharedSessionTmp;
 
                 continue;
@@ -42,12 +48,16 @@ function checkSharedSessions()
         var_dump(($stAll-$i));
     }
 
-    file_put_contents("gitignore/sharedSessions", serialize($sharedSession), FILE_APPEND);
+    file_put_contents("gitignore/sharedSessions".$date, serialize($sharedSession), FILE_APPEND);
     return $sharedSession;
 }
 
 function prepareDataSharedSession($url)
 {
+
+    $datum = '';
+    $ura = '';
+    $prostor = '';
 
     $base = downloadPage(DZ_URL .$url);
     $content = str_get_html($base);
@@ -71,6 +81,14 @@ function prepareDataSharedSession($url)
             $t = $item->find(".outputText", 0);
             $prostor = trim($t->text());
         }
+    }
+
+    if(
+        empty($datum) |
+        empty($ura) |
+        empty($prostor)
+    ){
+        die($url);
     }
 
     return array($datum, $ura, $prostor);
