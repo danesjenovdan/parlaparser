@@ -53,6 +53,8 @@ define('PARSE_SPEECHES_FORCE', ($sessionCustomOptions['parse_speeches_force'] ==
 define('PARSE_VOTES', ($sessionCustomOptions['parse_votes'] == 'true') ? true : false);
 define('PARSE_DOCS', ($sessionCustomOptions['parse_docs'] == 'true') ? true : false);
 
+define('FORCE_UPDATE', true);
+
 
 // Get people array
 $people = getPeople();
