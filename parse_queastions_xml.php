@@ -97,7 +97,7 @@ function findDokument($dokument, $id)
 
 
 $questionxml = 'http://fotogalerija.dz-rs.si/datoteke/opendata/VPP.XML';
-$questionxml = 'questions/VPP.XML';
+//$questionxml = 'questions/VPP.XML';
 $xml = simplexml_load_file($questionxml);
 
 $dokument = $xml->DOKUMENT;
