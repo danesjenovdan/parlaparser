@@ -297,6 +297,38 @@ function getSessionById($session_id){
     return false;
 }
 
+
+/**
+ * @param $session_id
+ * @return array|bool
+ */
+function getSessionsOrderByDate($limit, $org_id){
+    global $conn;
+
+    $org_sql = (intval($org_id) > 0) ? "WHERE organization_id = '" . pg_escape_string ($conn, $org_id) . "'" : "";
+
+    $array = array();
+    $sql = "
+		SELECT
+			*
+		FROM
+			parladata_session
+		$org_sql
+		ORDER BY id DESC
+		  limit '" . pg_escape_string ($conn, $limit) . "'
+		  offset 0
+		;
+	";
+
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+            $array[] = $row;
+        }
+    }
+    return $array;
+}
+
 function getSessionsShared()
 {
     global $conn;
