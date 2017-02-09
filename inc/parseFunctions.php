@@ -763,8 +763,10 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         }
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
-            if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
-                return false;
+            if(!FORCE_UPDATE) {
+                if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
+                    return false;
+                }
             }
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
@@ -787,6 +789,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         $tmp['speeches'] = array();
         $k = 0;
         if (PARSE_SPEECHES) {
+            var_dump("PARSE_SPEECHES");
             if ($session->find('td.vaTop', 3)) {
                 $sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
 
@@ -938,10 +941,6 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                                         $tmp['votingDocument'][] = parseVotesDocument(DZ_URL . $votes[3]->href, $voteDate,
                                             $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"] );
 
-
-                                        //var_dump($tmp['votingDocument']);                                        die();
-
-
                                         sleep(FETCH_TIMEOUT);
                                     }
                                 }
@@ -953,18 +952,9 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                     }
                 }
 
-                //saveVotes($tmp, $organization_id);
-
             }
 
         }
-
-        die('sdf');
-
-        //	Test: Izpis podatkov celotne seje
-        //print_r ($tmp);
-        //exit();
-
 
         //	Add to DB
         saveSession($tmp, $organization_id);
