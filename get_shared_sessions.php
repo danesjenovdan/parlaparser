@@ -18,7 +18,7 @@ function array_sort_by_column(&$arr, $col, $dir = SORT_ASC) {
 }
 
 function insertMissingSharedSessions($sharedSessions){
-    array_sort_by_column($sharedSessions, 'sharedSessionKey');
+    //array_sort_by_column($sharedSessions, 'sharedSessionKey');
 
     $similar = array();
     foreach ($sharedSessions as $item) {
@@ -57,8 +57,11 @@ function insertMissingSharedSessions($sharedSessions){
                 if(sessionDeletedById($sessionId)){
                     continue;
                 }
-                makeSessionBackupInDeleted($sessionId);
-                deleteSessionRelation($sessionId);
+                $insertedId = makeSessionBackupInDeleted($sessionId);
+                if($insertedId > 0){
+                    var_dump("insertedId " . $insertedId);
+                    deleteSessionRelation($sessionId);
+                }
             }
 
 

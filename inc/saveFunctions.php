@@ -457,7 +457,9 @@ function makeSessionBackupInDeleted($sessionId)
 
     $sql = "INSERT INTO parladata_session_deleted (id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review)
     SELECT id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review from parladata_session
-    WHERE parladata_session.id = " . $sessionId . ";
+    WHERE parladata_session.id = " . $sessionId . "
+    RETURNING id
+    ;
 ";
     var_dump($sql);
     $result = pg_query($conn, $sql);
@@ -466,7 +468,7 @@ function makeSessionBackupInDeleted($sessionId)
     if ($result) {
         if (pg_affected_rows($result) > 0) {
             $insert_row = pg_fetch_row($result);
-            $sessionInsertedId = $insert_row;
+            $sessionInsertedId = $insert_row[0];
         }
     }
 
