@@ -4,10 +4,6 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
-//$session = getSessionById(5577);
-//$content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']));
-//parseSessionsSingleForDoc($content, $session['organization_id'], $session);
-//die();
 
 $all = (66/2);
 $offset = 2;
@@ -177,7 +173,7 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 
         }
         //	Add to DB
-        saveSession($tmp, $organization_id);
+        //saveSession($tmp, $organization_id);
         var_dumpp("SAVE:");
         var_dumpp($organization_id);
     }
