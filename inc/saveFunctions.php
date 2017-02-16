@@ -266,6 +266,10 @@ function saveSession($session, $organization_id = 95)
         //	Set name to "dokument" when "naslov" is empty
         $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
 
+        if(motionExists($session_id, $organization_id, $voting['date'], $name)){
+            continue;
+        }
+
         $sql = "
 				INSERT INTO
 					parladata_motion

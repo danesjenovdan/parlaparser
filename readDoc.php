@@ -9,14 +9,16 @@ include_once('inc/config_custom.php');
 
 
 ////$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
-//$votDco = unserialize(file_get_contents("gitignore/doccache_7654.txt"));
-//
-////foreach ($votDco as $item) {
-////    print_r($item);
-////    echo "\n";
-////}
-////die();
-////var_dump($votDco); die();
+$votDco = unserialize(file_get_contents("gitignore/doccache_5572.txt"));
+
+var_dump(count($votDco));die();
+
+foreach ($votDco as $item) {
+    print_r($item);
+    echo "\n";
+}
+die();
+//var_dump($votDco); die();
 
 $dir = 'gitignore/';
 $doccacheFiles = scandir($dir);
