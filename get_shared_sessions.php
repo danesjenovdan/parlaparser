@@ -39,6 +39,7 @@ function insertMissingSharedSessions($sharedSessions){
     }
 
     $i = 1;
+    $deletedSEssions = array();
     foreach ($similar as $item) {
         if($item["st"] > 1){
 
@@ -61,6 +62,7 @@ function insertMissingSharedSessions($sharedSessions){
                 if($insertedId > 0){
                     var_dump("insertedId " . $insertedId);
                     deleteSessionRelation($sessionId);
+                    $deletedSEssions[] = $sessionId;
                 }
             }
 
@@ -74,6 +76,7 @@ function insertMissingSharedSessions($sharedSessions){
         }
 
     }
+    file_put_contents("gitignore/sharedSession", serialize($deletedSEssions, true), FILE_APPEND);
     var_dump($i);
 }
 
