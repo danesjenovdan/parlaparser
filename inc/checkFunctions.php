@@ -12,7 +12,7 @@ function getMissingSharedSessions($date)
     $i = 0;
 
     foreach ($sessionShared as $item) {
-
+        ++$i;
         if(sessionDeletedById($item["id"])){
             continue;
         }
@@ -32,7 +32,7 @@ function getMissingSharedSessions($date)
                 $urlSklic = $urlullistli->getAttribute("href");
 
 
-                $sharedS = prepareDataSharedSession($urlSklic);
+                $sharedS = prepareDataSharedSession($urlSklic, $date);
                 $sharedSessionTmp = array("sessionId" => $item["id"], "organizationId" => $item["organization_id"], "data" => $sharedS, "sharedSessionKey"=> implode("", $sharedS));
 
                 file_put_contents("gitignore/sharedSession".$date, print_r($sharedSessionTmp, true), FILE_APPEND);
@@ -44,7 +44,7 @@ var_dump($sharedSessionTmp);
 
         }
         //die();
-++$i;
+
         var_dump(($stAll-$i));
     }
 
@@ -52,7 +52,7 @@ var_dump($sharedSessionTmp);
     return $sharedSession;
 }
 
-function prepareDataSharedSession($url)
+function prepareDataSharedSession($url, $date)
 {
 
     $datum = '';
@@ -88,7 +88,7 @@ function prepareDataSharedSession($url)
         empty($ura) |
         empty($prostor)
     ){
-        die($url);
+        file_put_contents("gitignore/sharedSessionsERRORS".$date, print_r(array($datum, $ura, $prostor), true), FILE_APPEND);
     }
 
     return array($datum, $ura, $prostor);
