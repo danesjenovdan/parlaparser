@@ -5,13 +5,10 @@ require 'vendor/autoload.php';
 include_once('inc/config.php');
 
 
-
-$all = (1200/5);
 $all = (66/2);
 $offset = 2;
 $limit = 2;
 for ($i=0; $i < $all; $i++) {
-    //$sessions = getAllSessions(5, ($i*$offset));
     $sessions = getAllSessionsByOrganizationId(95, $limit, ($i*$offset));
     if (count($sessions) > 0) {
         foreach ($sessions as $session) {
@@ -173,11 +170,16 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                     }
                 }
                 //saveVotes($tmp, $organization_id);
+                if(is_array($tmp['votingDocument'])) {
+                    $votDco = $tmp['votingDocument'];
+                    file_put_contents("gitignore/doccachALL_" . $tmp['id'] . ".txt", serialize($votDco));
+                    var_dump($tmp['votingDocument']);
+                }
             }
 
         }
         //	Add to DB
-        saveSession($tmp, $organization_id);
+        //saveSession($tmp, $organization_id);
         var_dumpp("SAVE:");
         var_dumpp($organization_id);
     }
