@@ -4,6 +4,21 @@
 require 'vendor/autoload.php';
 include_once('inc/config.php');
 
+// Get people array
+$people = getPeople();
+$people_new = array();
+
+//8940
+//8972
+//9158
+$session = getSessionById(8940);
+$url = 'http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']);
+var_dump($url);
+$content = file_get_contents($url);
+parseSessionsSingleForDoc($content, $session['organization_id'], $session);
+
+die();
+
 
 $all = (66/2);
 $offset = 2;
@@ -127,10 +142,17 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                 $voteDate = false;
                                 $parseVotes = null;
 
+                                $epa = '';
+
                                 $votes = $votesResults->find('td a.outputLink');
+
+                                if (stripos($votes[3]->text(), "-") !== false) {
+                                    $epa = $votes[3]->text();
+                                }
+
                                 foreach ($votes as $vote) {
                                     if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $vote->text())) {
-                                        $parseVotes = parseVotes(DZ_URL . $vote->href);
+                                        $parseVotes = parseVotes(DZ_URL . $vote->href, $epa);
                                         $tmp['voting'][] = $parseVotes;
                                         sleep(FETCH_TIMEOUT);
                                         $voteLinkExists = true;
@@ -139,16 +161,17 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                 }
 
 
+                                $tmp['voting']['epa'] = $epa;
 
                                 if($voteLinkExists) {
 
                                     if (stripos($votes[3]->text(), "-") !== false) {
                                         if(voteLinkExists($tmp['id'], $tmp['link'], $votes[3]->href)){
-                                            continue;
+                                        //    continue;
                                         }
 
                                         $tmp['votingDocument'][] = parseVotesDocument(DZ_URL . $votes[3]->href, $voteDate,
-                                            $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"] );
+                                            $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"], $epa );
                                         //var_dump($tmp['votingDocument']);
                                         //die();
 
@@ -156,6 +179,8 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                     }
                                     $voteLinkInsertId = voteLinkInsert($tmp['id'], $tmp['link'], $votes[3]->href);
                                     var_dump($voteLinkInsertId);
+
+                                    $tmp['votingDocument']['epa'] = $epa;
                                 }
 
                             }
@@ -168,6 +193,12 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 
                         }
                     }
+
+                    file_put_contents("gitignore/tmpparset345" . ".txt", serialize($tmp));
+                    var_dump($tmp);
+                    die();
+
+
                 }
                 //saveVotes($tmp, $organization_id);
                 if(is_array($tmp['votingDocument'])) {

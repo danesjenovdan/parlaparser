@@ -137,6 +137,7 @@ CREATE SEQUENCE parladata_tmp_votelinks_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
 ALTER TABLE parladata_tmp_votelinks ALTER COLUMN id SET DEFAULT nextval('parladata_tmp_votelinks_id_seq');
 ALTER SEQUENCE parladata_tmp_votelinks_id_seq OWNED BY parladata_tmp_votelinks.id;
 GRANT ALL PRIVILEGES ON TABLE parladata_tmp_votelinks TO parladaddy;
+GRANT USAGE, SELECT ON SEQUENCE parladata_tmp_votelinks_id_seq TO parladaddy;
 
 
  */
