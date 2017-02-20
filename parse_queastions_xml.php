@@ -152,6 +152,7 @@ ALTER TABLE parladata_tmp_questions ALTER COLUMN id SET DEFAULT nextval('parlada
 ALTER SEQUENCE parladata_tmp_questions_id_seq OWNED BY parladata_tmp_questions.id;
 GRANT ALL PRIVILEGES ON TABLE parladata_tmp_questions TO parladaddy;
 GRANT USAGE, SELECT ON SEQUENCE parladata_tmp_questions_id_seq TO parladaddy;
+
  */
 function questionExists($datum, $naslov, $vlagatelj, $naslovljenec, $url, $docname)
 {
