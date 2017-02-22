@@ -8,6 +8,7 @@ include_once('inc/config.php');
 $people = getPeople();
 $people_new = array();
 
+/*
 //8940
 //8972
 //9158
@@ -16,11 +17,10 @@ $url = 'http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']);
 var_dump($url);
 $content = file_get_contents($url);
 parseSessionsSingleForDoc($content, $session['organization_id'], $session);
-
 die();
+*/
 
-
-$all = (66/2);
+$all = (72/2);
 $offset = 2;
 $limit = 2;
 for ($i=0; $i < $all; $i++) {
@@ -66,16 +66,11 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
         }
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
-//            if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
-//                return false;
-//            }
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
         }
         var_dumpp($tmp);
         var_dumpp($exists);
-
-
 
         //	Retrieve cookies
         $cookiess = '';
@@ -146,8 +141,10 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 
                                 $votes = $votesResults->find('td a.outputLink');
 
-                                if (stripos($votes[3]->text(), "-") !== false) {
-                                    $epa = $votes[3]->text();
+                                if(!empty($votes[3])) {
+                                    if (stripos($votes[3]->text(), "-") !== false) {
+                                        $epa = $votes[3]->text();
+                                    }
                                 }
 
                                 foreach ($votes as $vote) {
@@ -194,18 +191,20 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                         }
                     }
 
+                    /*
                     file_put_contents("gitignore/tmpparset345" . ".txt", serialize($tmp));
                     var_dump($tmp);
-                    die();
-
-
+                    die('page1');
+                    */
                 }
                 //saveVotes($tmp, $organization_id);
+                /*
                 if(is_array($tmp['votingDocument'])) {
                     $votDco = $tmp['votingDocument'];
                     file_put_contents("gitignore/doccachALL_" . $tmp['id'] . ".txt", serialize($votDco));
                     var_dump($tmp['votingDocument']);
                 }
+                */
             }
 
         }
