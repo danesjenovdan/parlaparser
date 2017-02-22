@@ -38,7 +38,7 @@ include_once('inc/config_custom.php');
 
 
 //////$votDco = unserialize(file_get_contents("gitignore/doccache.txt"));
-$votDco = unserialize(file_get_contents("gitignore/doccache_8940.txt"));
+$votDco = unserialize(file_get_contents("gitignore/doccache_5572.txt"));
 //
 //var_dump(count($votDco));die();
 //
