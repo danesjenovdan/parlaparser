@@ -462,6 +462,7 @@ limit $limit OFFSET $offset;
 function findExistingMotion($organization_id, $session_id, $date, $name)
 {
     global $conn;
+    /*
     $sql = "
 			select * from 
 				parladata_motion
@@ -470,6 +471,19 @@ function findExistingMotion($organization_id, $session_id, $date, $name)
 			  CAST(date AS DATE) = '" . $date . "' and
 			  session_id = '" . $session_id . "' and
 			  text = '" . $name . "' and
+			  party_id = '" . $organization_id . "'
+			;
+		";
+    */
+
+    $sql = "
+			select * from 
+				parladata_motion
+			where 
+              organization_id = '" . $organization_id . "' and 
+			  CAST(date AS DATE) = '" . $date . "' and
+			  session_id = '" . $session_id . "' and
+			  text like '%" . $name . "%' and
 			  party_id = '" . $organization_id . "'
 			;
 		";
