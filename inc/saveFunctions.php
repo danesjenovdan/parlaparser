@@ -570,21 +570,16 @@ function insertVotingDocument($motionId, $organization_id, $session_id, $date, $
     global $conn;
     $return = array();
 
-    if(is_array($items[3]) && (count($items[3]) > 0)){
-        foreach ($items[3] as $item) {
 
+        foreach ($items as $item) {
 
-            if(empty($item['urlName']) && empty($item['urlLink'])){
-                continue;
-            }
 
             if(documentLinkExists($motionId, $organization_id, $session_id, $date, $name, $item)){
                 print_r("getLinkDocument EXIST");
                 continue;
             }
-            $name = $item['name'];
-            $note = $item['note'];
-            $epa = $item['epa'];
+            $name = $item['urlName'];
+
             $urlName = $item['urlName'];
             $urlLink = $item['urlLink'];
 
@@ -606,7 +601,7 @@ function insertVotingDocument($motionId, $organization_id, $session_id, $date, $
                 $return[] = $link_id;
             }
         }
-    }
+
 
     return $return;
 }
