@@ -99,13 +99,13 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
 
     $searchInMe = array();
 
-    $searchInMe[] = 'xml/PZ.xml';
-    $searchInMe[] = 'xml/PZ7.xml';
-    $searchInMe[] = 'xml/SZ.xml';
-    $searchInMe[] = 'xml/PA.xml';
-    $searchInMe[] = 'xml/PA7.xml';
-    $searchInMe[] = 'xml/SA.xml';
-    $searchInMe[] = 'xml/PB.xml';
+    $searchInMe[] = 'xml/PZ.XML';
+    $searchInMe[] = 'xml/PZ7.XML';
+    $searchInMe[] = 'xml/SZ.XML';
+    $searchInMe[] = 'xml/PA.XML';
+    $searchInMe[] = 'xml/PA7.XML';
+    $searchInMe[] = 'xml/SA.XML';
+    $searchInMe[] = 'xml/PB.XML';
 
     foreach ($searchInMe as $xmlFile) {
 
