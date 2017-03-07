@@ -20,7 +20,7 @@ parseSessionsSingleForDoc($content, $session['organization_id'], $session);
 die();
 */
 
-$all = (72/2);
+$all = (80/2);
 $offset = 2;
 $limit = 2;
 for ($i=0; $i < $all; $i++) {
@@ -64,7 +64,8 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
         if(sessionDeleted($session_nouid)){
             return false;
         }
-        // Check if session already imported
+
+
         if ($exists = sessionExists($session_nouid)) {
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
@@ -72,7 +73,6 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
         var_dumpp($tmp);
         var_dumpp($exists);
 
-        //	Retrieve cookies
         $cookiess = '';
         if (isset($http_response_header)) {
             foreach ($http_response_header as $s) {
@@ -82,19 +82,6 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
         }
         $cookiess = substr($cookiess, 0, -2);
 
-        // Parse data
-        $tmp['speeches'] = array();
-        $k = 0;
-
-
-        $tmp['documents'] = array();
-
-        // Parse voting data
-        $tmp['voting'] = array();
-        //if (PARSE_VOTES) {
-        if (true) {
-            var_dump("VOTES");
-            //  Search on DT page or not TODO: better solution needed
             preg_match('/form id="(.*?):form1"/', $session, $fmatches);
             $form_id = $fmatches[1];
             preg_match('/form id="' . $form_id . ':form1".*?action="(.*?)"/', $session, $matches);
@@ -134,84 +121,118 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                             foreach ($votearea->find('tbody tr') as $votesResults) {
 
                                 $voteLinkExists = false;
-                                $voteDate = false;
-                                $parseVotes = null;
 
-                                $epa = '';
 
                                 $votes = $votesResults->find('td a.outputLink');
 
+                                $datum = '';
+                                if(!empty($votes[0])) {
+                                    if (stripos($votes[0]->text(), ".") !== false) {
+                                        $datum = $votes[0]->text();
+                                    }
+                                }
+                                $ura = '';
+                                if(!empty($votes[1])) {
+                                    if (stripos($votes[1]->text(), ":") !== false) {
+                                        $ura = $votes[1]->text();
+                                    }
+                                }
+                                $kvorum = '';
+                                if(!empty($votes[2])) {
+                                    if (stripos($votes[2]->text(), "Kvorum") !== false) {
+                                        $kvorum = $votes[2]->text();
+                                    }
+                                }
+                                $epa = '';
+                                $epaLink = '';
                                 if(!empty($votes[3])) {
                                     if (stripos($votes[3]->text(), "-") !== false) {
                                         $epa = $votes[3]->text();
+                                        $epaLink = $votes[3]->href;
+                                    }
+                                }
+                                $dokument = '';
+                                if(!empty($votes[4])) {
+                                    if (stripos($votes[4]->text(), " ") !== false) {
+                                        $dokument = $votes[4]->text();
                                     }
                                 }
 
+                                $voteLink = '';
                                 foreach ($votes as $vote) {
                                     if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $vote->text())) {
-                                        $parseVotes = parseVotes(DZ_URL . $vote->href, $epa);
-                                        $tmp['voting'][] = $parseVotes;
-                                        sleep(FETCH_TIMEOUT);
+                                        //$parseVotes = parseVotes(DZ_URL . $vote->href, $epa);
+                                        $voteLink = $vote->href;
                                         $voteLinkExists = true;
-                                        $voteDate = trim($vote->text());
                                     }
                                 }
-
-
-                                $tmp['voting']['epa'] = $epa;
 
                                 if($voteLinkExists) {
 
-                                    if (stripos($votes[3]->text(), "-") !== false) {
-                                        if(voteLinkExists($tmp['id'], $tmp['link'], $votes[3]->href)){
-                                        //    continue;
-                                        }
+                                    $votesData = array();
+                                    $votesData["session_id"] = $tmp['id'];
+                                    $votesData["ura"] = $ura;
+                                    $votesData["datum"] = $datum;
+                                    $votesData["kvorum"] = $kvorum;
+                                    $votesData["epa"] = $epa;
+                                    $votesData["dokument"] = asciireplace($dokument);
+                                    $votesData["vote_link"] = DZ_URL . $voteLink;
+                                    $votesData["epa_link"] = DZ_URL . $epaLink;
+                                    $votesData["inserted"] = date("YmdHi");
+                                    $link_id = insertTmpVotesLinkForDocuments($votesData);
 
-                                        $tmp['votingDocument'][] = parseVotesDocument(DZ_URL . $votes[3]->href, $voteDate,
-                                            $tmp['id'], $organization_id, $parseVotes["dokument"],  $parseVotes["naslov"], $epa );
-                                        //var_dump($tmp['votingDocument']);
-                                        //die();
+                                    var_dump($link_id);
 
-                                        sleep(FETCH_TIMEOUT);
-                                    }
-                                    $voteLinkInsertId = voteLinkInsert($tmp['id'], $tmp['link'], $votes[3]->href);
-                                    var_dump($voteLinkInsertId);
-
-                                    $tmp['votingDocument']['epa'] = $epa;
                                 }
 
-                            }
 
-                            if(is_array($tmp['votingDocument'])) {
-                                $votDco = $tmp['votingDocument'];
-                                file_put_contents("gitignore/doccache_" . $tmp['id'] . ".txt", serialize($votDco));
-                                var_dump($tmp['votingDocument']);
+
                             }
 
                         }
                     }
 
-                    /*
-                    file_put_contents("gitignore/tmpparset345" . ".txt", serialize($tmp));
-                    var_dump($tmp);
-                    die('page1');
-                    */
                 }
-                //saveVotes($tmp, $organization_id);
-                /*
-                if(is_array($tmp['votingDocument'])) {
-                    $votDco = $tmp['votingDocument'];
-                    file_put_contents("gitignore/doccachALL_" . $tmp['id'] . ".txt", serialize($votDco));
-                    var_dump($tmp['votingDocument']);
-                }
-                */
             }
 
-        }
+
         //	Add to DB
-        //saveSession($tmp, $organization_id);
         var_dumpp("SAVE:");
         var_dumpp($organization_id);
     }
 
+}
+
+function insertTmpVotesLinkForDocuments($data){
+    global $conn;
+
+
+
+    $session_id = $data["session_id"];
+    $ura = $data["ura"];
+    $datum = $data["datum"];
+    $kvorum = $data["kvorum"];
+    $epa = $data["epa"];
+    $dokument = $data["dokument"];
+    $voteLink = $data["vote_link"];
+    $epaLink = $data["epa_link"];
+    $inserted = $data["inserted"];
+
+    $sql = "
+    INSERT INTO parladata_tmpvoteslinkdocuments (session_id, ura, datum, kvorum, epa, dokument, vote_link, epa_link, inserted) VALUES 
+    ( " . pg_escape_string($conn, $session_id) . ", '" . pg_escape_string($conn, $ura) . "', '" . pg_escape_string($conn, $datum) . "', 
+    '" . pg_escape_string($conn, $kvorum) . "', '" . pg_escape_string($conn, $epa) . "', '" . pg_escape_string($conn, $dokument) . "', 
+    '" . pg_escape_string($conn, $voteLink) . "', '" . pg_escape_string($conn, $epaLink) . "', '" . pg_escape_string($conn, $inserted) . "')
+					RETURNING id
+				";
+    $result = pg_query($conn, $sql);
+
+    $link_id = 0;
+    if (pg_affected_rows($result) > 0) {
+        $insert_row = pg_fetch_row($result);
+        $link_id = $insert_row[0];
+
+    }
+
+    return $link_id;
 }
