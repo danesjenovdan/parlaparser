@@ -89,11 +89,13 @@ function getTmpVotesLinkDocuments(){
 
 }
 
-
+$items = array();
 
 getTmpVotesLinkDocuments();
 
 function searchInAllSections($unid, $session_id, $datum, $dokument){
+
+    global $items;
 
     $searchInMe = array();
 
@@ -116,6 +118,8 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
 
                 var_dump($xmlFile);
 
+
+
                 //POVEZANI_PREDPISI
                 foreach ($predpis->POVEZANI_PREDPISI->UNID as $povezani_predpisi_unid) {
                     var_dump((string)$povezani_predpisi_unid);
@@ -128,16 +132,23 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
                     searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
                 }
 
-                $motionName = trim((string)$predpis->KARTICA_PREDPISA->KARTICA_NAZIV) .' - '. trim($dokument);
+                //$motionName = trim((string)$predpis->KARTICA_PREDPISA->KARTICA_NAZIV) .' - '. trim($dokument);
+                $motionName = trim($dokument);
 
                 $date = DateTime::createFromFormat('d.m.Y', $datum)->format('Y-m-d');
+
+                var_dump($date);
 
                 $motion = findExistingMotion(95, $session_id, $date, $motionName);
 
                 $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
 
+                var_dump($items);
+
+
+
                 if ($motionId) {
-                    $id = insertVotingDocument($motionId, 95, $session_id, $date, $motionName, $item);
+                    $id = insertVotingDocument($motionId, 95, $session_id, $date, $motionName, $items);
                     print_r("inserted: ");
                     print_r($id);
                 } else {
@@ -178,7 +189,10 @@ function searchInOBRAVNAVA_PREDPISA($xmlFile, $unid){
 
 
 function searchInDOKUMENT($xmlFile, $unid){
+    global $items;
+
     $xml = simplexml_load_file($xmlFile);
+
 
     foreach ($xml->DOKUMENT as $dokument) {
 
@@ -188,6 +202,14 @@ function searchInDOKUMENT($xmlFile, $unid){
             var_dump("    najdu dokument " . (string)$dokument->KARTICA_DOKUMENTA->UNID);
             //var_dump("najdu dokument " . (string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC);
             //var_dump((string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC);
+
+            if(!empty((string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC)) {
+
+                $tmpItem = array("urlLink"=>(string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC, "urlName" => (string)$dokument->KARTICA_DOKUMENTA->KARTICA_NAZIV);
+
+                $items[] = $tmpItem;
+
+            }
 
             foreach ($dokument->PODDOKUMENTI->UNID as $poddokumenti_unid) {
                 var_dump((string)$poddokumenti_unid);
