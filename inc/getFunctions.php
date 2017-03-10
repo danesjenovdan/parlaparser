@@ -462,7 +462,7 @@ limit $limit OFFSET $offset;
 function findExistingMotion($organization_id, $session_id, $date, $name)
 {
     global $conn;
-    /*
+
     $sql = "
 			select * from 
 				parladata_motion
@@ -474,8 +474,8 @@ function findExistingMotion($organization_id, $session_id, $date, $name)
 			  party_id = '" . $organization_id . "'
 			;
 		";
-    */
 
+/*
     $sql = "
 			select * from 
 				parladata_motion
@@ -487,7 +487,7 @@ function findExistingMotion($organization_id, $session_id, $date, $name)
 			  party_id = '" . $organization_id . "'
 			;
 		";
-
+*/
     print_r($sql);
 
     $result = pg_query ($conn, $sql);

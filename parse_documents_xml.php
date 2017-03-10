@@ -79,7 +79,9 @@ CREATE TABLE parladata_tmpvoteslinkdocuments
     dokument TEXT,
     vote_link TEXT,
     epa_link TEXT,
-    inserted VARCHAR(20)
+    inserted VARCHAR(20),
+    dokument2 TEXT,
+    naslov2 TEXT
 );
 
 CREATE SEQUENCE parladata_tmpvoteslinkdocuments_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
@@ -96,7 +98,7 @@ function getTmpVotesLinkDocuments(){
     //SELECT * FROM parladata_tmpvoteslinkdocuments where epa != '' AND session_id = 5572
     //SELECT * FROM parladata_tmpvoteslinkdocuments where id = 158
     $sql = "
-	SELECT * FROM parladata_tmpvoteslinkdocuments where epa != '' AND session_id = 5572
+	  SELECT * FROM parladata_tmpvoteslinkdocuments where epa != ''
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
@@ -107,7 +109,7 @@ function getTmpVotesLinkDocuments(){
             $uid = getRedirectedUid($tmpUid);
 
             if(!empty($uid)) {
-                searchInAllSections($uid, $row["session_id"], trim($row["datum"]), $row["dokument"]);
+                searchInAllSections($uid, $row["session_id"], trim($row["datum"]), $row);
             }
             //die();
 
@@ -118,7 +120,7 @@ function getTmpVotesLinkDocuments(){
 }
 
 
-function searchInAllSections($unid, $session_id, $datum, $dokument){
+function searchInAllSections($unid, $session_id, $datum, $data){
 
     global $items;
 
@@ -173,17 +175,21 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
                 }
 
                 //$motionName = trim((string)$predpis->KARTICA_PREDPISA->KARTICA_NAZIV) .' - '. trim($dokument);
-                $motionName = trim($dokument);
+                //$motionName = trim($dokument);
                 $date = DateTime::createFromFormat('d.m.Y', $datum)->format('Y-m-d');
 
+
+
+                //	Set name to "dokument" when "naslov" is empty
+                $motionName = (!empty ($data['naslov2'])) ? $data['naslov2'] . ' - ' . $data['dokument2'] : $data['dokument2'];
                 $motion = findExistingMotion(95, $session_id, $date, $motionName);
+
 
                 $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
 
                 var_dump($motion);
                 var_dump($motionId);
                 print_r($items); echo "\r\n";
-
 
 //continue;
                 if ($motionId) {
