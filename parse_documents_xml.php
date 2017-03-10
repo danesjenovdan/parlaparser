@@ -55,6 +55,9 @@ function getRedirectedUid($url){
         $tmpurl = ($info["redirect_url"]);
         $parts = parse_url($tmpurl);
         parse_str($parts['query'], $query);
+
+        echo ($url) ."\r\n";
+
         $uid = $query['uid'];
 
 
@@ -64,11 +67,36 @@ function getRedirectedUid($url){
 
 }
 
+/*
+CREATE TABLE parladata_tmpvoteslinkdocuments
+(
+    id INTEGER PRIMARY KEY NOT NULL,
+    session_id INTEGER,
+    ura VARCHAR(20),
+    datum VARCHAR(20),
+    kvorum VARCHAR(50),
+    epa VARCHAR(20),
+    dokument TEXT,
+    vote_link TEXT,
+    epa_link TEXT,
+    inserted VARCHAR(20)
+);
+
+CREATE SEQUENCE parladata_tmpvoteslinkdocuments_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
+ALTER TABLE parladata_tmpvoteslinkdocuments ALTER COLUMN id SET DEFAULT nextval('parladata_tmpvoteslinkdocuments_id_seq');
+ALTER SEQUENCE parladata_tmpvoteslinkdocuments_id_seq OWNED BY parladata_tmpvoteslinkdocuments.id;
+GRANT ALL PRIVILEGES ON TABLE parladata_tmpvoteslinkdocuments TO parladaddy;
+GRANT USAGE, SELECT ON SEQUENCE parladata_tmpvoteslinkdocuments_id_seq TO parladaddy;
+
+ */
+
 function getTmpVotesLinkDocuments(){
     global $conn;
 
+    //SELECT * FROM parladata_tmpvoteslinkdocuments where epa != '' AND session_id = 5572
+    //SELECT * FROM parladata_tmpvoteslinkdocuments where id = 158
     $sql = "
-	SELECT * FROM parladata_tmpvoteslinkdocuments
+	SELECT * FROM parladata_tmpvoteslinkdocuments where epa != '' AND session_id = 5572
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
@@ -81,7 +109,7 @@ function getTmpVotesLinkDocuments(){
             if(!empty($uid)) {
                 searchInAllSections($uid, $row["session_id"], trim($row["datum"]), $row["dokument"]);
             }
-            die();
+            //die();
 
         }
     }
@@ -89,9 +117,6 @@ function getTmpVotesLinkDocuments(){
 
 }
 
-$items = array();
-
-getTmpVotesLinkDocuments();
 
 function searchInAllSections($unid, $session_id, $datum, $dokument){
 
@@ -116,37 +141,51 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
             //var_dump((string)$predpis->KARTICA_PREDPISA->UNID);
             if(stripos($predpis->KARTICA_PREDPISA->UNID, $unid) !== false){
 
-                var_dump($xmlFile);
+                echo ((string)$predpis->KARTICA_PREDPISA->UNID)."\r\n";
 
-
+                $items = array();
 
                 //POVEZANI_PREDPISI
                 foreach ($predpis->POVEZANI_PREDPISI->UNID as $povezani_predpisi_unid) {
-                    var_dump((string)$povezani_predpisi_unid);
-                    searchInOBRAVNAVA_PREDPISA($xmlFile, (string)$povezani_predpisi_unid);
+                    if(!empty((string)$povezani_predpisi_unid)) {
+                        echo ((string)$povezani_predpisi_unid) . "\r\n";
+                        searchInOBRAVNAVA_PREDPISA($xmlFile, (string)$povezani_predpisi_unid);
+                    }
                 }
 
                 //PODDOKUMENTI
                 foreach ($predpis->PODDOKUMENTI->UNID as $poddokumenti_unid) {
-                    var_dump((string)$poddokumenti_unid);
-                    searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
+                    if(!empty((string)$poddokumenti_unid)) {
+                        echo ((string)$poddokumenti_unid) . "\r\n";
+                        searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
+                    }
+                }
+
+                //PRIPONKA
+                if(isset($predpis->PRIPONKA)) {
+                    foreach ($predpis->PRIPONKA->PRIPONKA_KLIC as $priponka) {
+                        $tmpItem = array(
+                            "urlLink" => (string)$priponka,
+                            "urlName" => (string)$predpis->KARTICA_PREDPISA->KARTICA_NAZIV
+                        );
+                        $items[] = $tmpItem;
+                    }
                 }
 
                 //$motionName = trim((string)$predpis->KARTICA_PREDPISA->KARTICA_NAZIV) .' - '. trim($dokument);
                 $motionName = trim($dokument);
-
                 $date = DateTime::createFromFormat('d.m.Y', $datum)->format('Y-m-d');
-
-                var_dump($date);
 
                 $motion = findExistingMotion(95, $session_id, $date, $motionName);
 
                 $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
 
-                var_dump($items);
+                var_dump($motion);
+                var_dump($motionId);
+                print_r($items); echo "\r\n";
 
 
-
+//continue;
                 if ($motionId) {
                     $id = insertVotingDocument($motionId, 95, $session_id, $date, $motionName, $items);
                     print_r("inserted: ");
@@ -156,7 +195,7 @@ function searchInAllSections($unid, $session_id, $datum, $dokument){
                     //var_dump($item);
                 }
 
-                die("najden");
+                //die("najden");
             }
 
         }
@@ -177,7 +216,19 @@ function searchInOBRAVNAVA_PREDPISA($xmlFile, $unid){
         //var_dump((string)$predpis->KARTICA_OBRAVNAVE_PREDPISA->UNID);
         if(stripos($predpis->KARTICA_OBRAVNAVE_PREDPISA->UNID, $unid) !== false){
 
-            var_dump("  najdu predpis " . (string)$unid);
+            echo ("  najdu predpis " . (string)$unid)."\r\n";
+
+            //PRIPONKA
+            if(isset($predpis->PRIPONKA)) {
+                foreach ($predpis->PRIPONKA->PRIPONKA_KLIC as $priponka) {
+                    $tmpItem = array(
+                        "urlLink" => (string)$priponka,
+                        "urlName" => (string)$predpis->KARTICA_OBRAVNAVE_PREDPISA->KARTICA_NAZIV
+                    );
+                    $items[] = $tmpItem;
+                }
+            }
+
             foreach ($predpis->PODDOKUMENTI->UNID as $poddokumenti_unid) {
                 searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
             }
@@ -199,21 +250,25 @@ function searchInDOKUMENT($xmlFile, $unid){
         //var_dump((string)$predpis->KARTICA_DOKUMENTA->UNID);
         if(stripos($dokument->KARTICA_DOKUMENTA->UNID, $unid) !== false){
 
-            var_dump("    najdu dokument " . (string)$dokument->KARTICA_DOKUMENTA->UNID);
+            echo ("    najdu dokument " . (string)$dokument->KARTICA_DOKUMENTA->UNID)."\r\n";
             //var_dump("najdu dokument " . (string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC);
             //var_dump((string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC);
 
             if(!empty((string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC)) {
 
-                $tmpItem = array("urlLink"=>(string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC, "urlName" => (string)$dokument->KARTICA_DOKUMENTA->KARTICA_NAZIV);
-
+                $tmpItem = array(
+                    "urlLink"=>(string)$dokument->KARTICA_DOKUMENTA->PRIPONKA->PRIPONKA_KLIC,
+                    "urlName" => (string)$dokument->KARTICA_DOKUMENTA->KARTICA_NAZIV
+                );
                 $items[] = $tmpItem;
 
             }
 
             foreach ($dokument->PODDOKUMENTI->UNID as $poddokumenti_unid) {
-                var_dump((string)$poddokumenti_unid);
-                searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
+                if(!empty((string)$poddokumenti_unid)) {
+                    echo ((string)$poddokumenti_unid) . "\r\n";
+                    searchInDOKUMENT($xmlFile, (string)$poddokumenti_unid);
+                }
             }
 
         }
@@ -224,38 +279,22 @@ function searchInDOKUMENT($xmlFile, $unid){
 
 
 
-function readCacheFromFile($votDco)
-{
+$items = array();
+getTmpVotesLinkDocuments();
 
-    foreach ($votDco as $item) {
+/*
+ scenarij:
 
-        $organization_id = $item[2];
-        $session_id = $item[1];
-        //$date = $item[0];
-        $name = (!empty ($item[5])) ? $item[5] . ' - ' . $item[4] : $item[4];
+preko epa linka (ki ima redirekt) dobim uid:
 
-        if (!validateDate($item[0])) {
-            continue;
-        }
-        $date = DateTime::createFromFormat('d.m.Y', $item[0])->format('Y-m-d');
+http://www.dz-rs.si/wps/PA_DZ-LN-Iskalnik/EpaLinkServlet?epa=1363-VII&amp;pathPrefix=/wps/portal
+->
+https://www.dz-rs.si/wps/portal/Home/deloDZ/zakonodaja/izbranZakonAkt?uid=C1257A70003EE5D7C125807A004B6F25&db=spr_zak&mandat=VII
+uid: C1257A70003EE5D7C125807A004B6F25
 
-        $motion = findExistingMotion($organization_id, $session_id, $date, $name);
 
-        $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
 
-        if ($motionId) {
-            $id = insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $item);
-            print_r("inserted: ");
-            print_r($id);
-        } else {
-            print_r("nogo");
-            //var_dump($item);
-        }
-
-        //die();
-
-    }
-}
+ */
 
 /*
 
