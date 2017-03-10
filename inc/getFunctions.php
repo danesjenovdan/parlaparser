@@ -509,18 +509,25 @@ function documentLinkExists($motionId, $organization_id, $session_id, $date, $na
     $urlLink = $item['urlLink'];
 
     $sql = "
-					select * from
+select * from
 						parladata_link
-						where 
+						where
 						url = '" . pg_escape_string($conn, $urlLink) . "' and
-						note = '" . pg_escape_string($conn, $urlName) . "' and
-						organization_id = '" . $organization_id . "' and 
-						date = '" . pg_escape_string($conn, $date) . "' and
-						session_id = '" . $session_id . "' and
-						motion_id = '" . $motionId . "'
+                        note = '" . pg_escape_string($conn, $urlName) . "' and
+                        organization_id = '" . $organization_id . "' and
+                        date = '" . pg_escape_string($conn, $date) . "' and
+                        session_id = '" . $session_id . "' and
+                        motion_id = '" . $motionId . "'
+					
 					;
 				";
 //			name = '" . pg_escape_string($conn, $name) . "' and
+    /*
+    select * from
+						parladata_link
+						where
+						url = '" . pg_escape_string($conn, $urlLink) . "'
+                        */
 
     print_r($sql);
 
