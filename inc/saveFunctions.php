@@ -392,7 +392,10 @@ function handleSessionSpeeches($session, $session_id){
 				VALUES
 				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
 			";
-                pg_query($conn, $sqlInsertAgain);
+                $res = pg_query($conn, $sqlInsertAgain);
+                if (pg_affected_rows($res) > 0) {
+                    $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=review_ext=1review=0");
+                }
 
             } else if ($session['review_ext'] == 1 && $session['review'] == 1) {
 
@@ -404,7 +407,10 @@ function handleSessionSpeeches($session, $session_id){
 				VALUES
 				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
 			";
-                    pg_query($conn, $sqlInsertAgain);
+                    $res = pg_query($conn, $sqlInsertAgain);
+                    if (pg_affected_rows($res) > 0) {
+                        $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=review_ext=1review=1");
+                    }
                 }
             } else {
                 $sql = "
@@ -414,10 +420,13 @@ function handleSessionSpeeches($session, $session_id){
 				VALUES
 				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', '" . $speech_date . "', 'infinity')
 			";
-                pg_query($conn, $sql);
+                $res = pg_query($conn, $sql);
+                if (pg_affected_rows($res) > 0) {
+                    $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=new");
+                }
             }
 
-            $reportData["parladata_speech"][] = array($talk['id'], $speech_date);
+
         }
     }
 
