@@ -231,7 +231,7 @@ function parseSessionsList($content, $organization_id)
                                             $voteDate = trim($vote->text());
                                         }
                                     }
-
+                                    $voteLinkExists = false;
                                     if($voteLinkExists) {
 
                                         if (stripos($votes[3]->text(), "-") !== false) {
@@ -502,7 +502,7 @@ function parseSpeeches($url, $datum)
  * @param string $url URL to fetch
  * @return array Array of votes
  */
-function parseVotes($url, $epa)
+function parseVotes($url, $epa = null)
 {
     $array = array();
 
@@ -569,7 +569,7 @@ function parseVotes($url, $epa)
 }
 
 
-function parseVotesDocument($url, $voteDate, $sessionId, $organizationId, $naslov, $dokument, $epa)
+function parseVotesDocument($url, $voteDate, $sessionId, $organizationId, $naslov, $dokument, $epa = null)
 {
     $data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
     // Log
@@ -937,7 +937,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                                         $voteDate = trim($vote->text());
                                     }
                                 }
-
+                                $voteLinkExists = false;
                                 if($voteLinkExists) {
 
                                     if (stripos($votes[3]->text(), "-") !== false) {
@@ -948,9 +948,11 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                                     }
                                 }
                             }
-                            $votDco = $tmp['votingDocument'];
-                            file_put_contents("gitignore/doccache.txt", serialize($votDco));
-                            var_dump($tmp['votingDocument']);
+                            if(is_array($tmp['votingDocument']) && (count($tmp['votingDocument'])>0)) {
+                                $votDco = $tmp['votingDocument'];
+                                file_put_contents("gitignore/doccache.txt", serialize($votDco));
+                                var_dump($tmp['votingDocument']);
+                            }
                         }
                     }
                 }
@@ -1159,7 +1161,7 @@ function parseSessionsSingleUpdate($content, $organization_id, $sessionData)
                             if(!PARSE_VOTES_DOCS){
                                 $voteLinkExists = false;
                             }
-
+                            $voteLinkExists = false;
                             if ($voteLinkExists) {
 
                                 if (stripos($votes[3]->text(), "-") !== false) {

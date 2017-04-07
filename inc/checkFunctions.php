@@ -13,30 +13,30 @@ function getMissingSharedSessions($date)
 
     foreach ($sessionShared as $item) {
         ++$i;
-        if(sessionDeletedById($item["id"])){
+        if (sessionDeletedById($item["id"])) {
             continue;
         }
 
         $url = html_entity_decode($item["gov_id"]);
         var_dump($url);
 
-        $base = downloadPage(DZ_URL .$url);
+        $base = downloadPage(DZ_URL . $url);
         $content = str_get_html($base);
 
         $ullistlis = $content->find('ul.listNoBtn');
         foreach ($ullistlis as $ullistli) {
 
             $sklicSeje = $ullistli->text();
-            if(stripos($sklicSeje, "sklic seje") !== false){
+            if (stripos($sklicSeje, "sklic seje") !== false) {
                 $urlullistli = $ullistli->find("a", 0);
                 $urlSklic = $urlullistli->getAttribute("href");
 
 
                 $sharedS = prepareDataSharedSession($urlSklic, $date);
-                $sharedSessionTmp = array("sessionId" => $item["id"], "organizationId" => $item["organization_id"], "data" => $sharedS, "sharedSessionKey"=> implode("", $sharedS));
+                $sharedSessionTmp = array("sessionId" => $item["id"], "organizationId" => $item["organization_id"], "data" => $sharedS, "sharedSessionKey" => implode("", $sharedS));
 
-                file_put_contents("gitignore/sharedSession".$date, print_r($sharedSessionTmp, true), FILE_APPEND);
-var_dump($sharedSessionTmp);
+                file_put_contents("gitignore/sharedSession" . $date, print_r($sharedSessionTmp, true), FILE_APPEND);
+                var_dump($sharedSessionTmp);
                 $sharedSession[] = $sharedSessionTmp;
 
                 continue;
@@ -45,10 +45,10 @@ var_dump($sharedSessionTmp);
         }
         //die();
 
-        var_dump(($stAll-$i));
+        var_dump(($stAll - $i));
     }
 
-    file_put_contents("gitignore/sharedSessions".$date, serialize($sharedSession), FILE_APPEND);
+    file_put_contents("gitignore/sharedSessions" . $date, serialize($sharedSession), FILE_APPEND);
     return $sharedSession;
 }
 
@@ -59,7 +59,7 @@ function prepareDataSharedSession($url, $date)
     $ura = '';
     $prostor = '';
 
-    $base = downloadPage(DZ_URL .$url);
+    $base = downloadPage(DZ_URL . $url);
     $content = str_get_html($base);
 
     $tableTr = $content->find('.form table tr');
@@ -67,28 +67,28 @@ function prepareDataSharedSession($url, $date)
 
         //var_dump($item->text());
 
-        if(stripos($item->text(), 'Datum:') !== false) {
+        if (stripos($item->text(), 'Datum:') !== false) {
             $t = $item->find(".outputText", 0);
             $datum = html_entity_decode(trim($t->text()));
         }
 
-        if(stripos($item->text(), 'Ura:') !== false) {
+        if (stripos($item->text(), 'Ura:') !== false) {
             $t = $item->find(".outputText", 0);
             $ura = html_entity_decode(trim($t->text()));
         }
 
-        if(stripos($item->text(), 'Prostor') !== false) {
+        if (stripos($item->text(), 'Prostor') !== false) {
             $t = $item->find(".outputText", 0);
             $prostor = trim($t->text());
         }
     }
 
-    if(
+    if (
         empty($datum) |
         empty($ura) |
         empty($prostor)
-    ){
-        file_put_contents("gitignore/sharedSessionsERRORS".$date, print_r(array($datum, $ura, $prostor), true), FILE_APPEND);
+    ) {
+        file_put_contents("gitignore/sharedSessionsERRORS" . $date, print_r(array($datum, $ura, $prostor), true), FILE_APPEND);
     }
 
     return array($datum, $ura, $prostor);
@@ -107,14 +107,14 @@ function motionExists($session_id, $organization_id, $date, $name)
 		organization_id = '" . $organization_id . "' AND
 		date = '" . $date . "' AND 
 		session_id = '" . $session_id . "' AND
-		text = '" . pg_escape_string ($conn, $name) . "' AND 
+		text = '" . pg_escape_string($conn, $name) . "' AND 
 		party_id = '" . $organization_id . "'
 		;
     ";
 
-    $result = pg_query ($conn, $sql);
+    $result = pg_query($conn, $sql);
     if ($result) {
-        if (pg_num_rows ($result) > 0) {
+        if (pg_num_rows($result) > 0) {
             return true;
         }
     }
@@ -150,19 +150,20 @@ function voteLinkExists($session_id, $gov_id, $url)
     select * from parladata_tmp_votelinks
     where 
 		session_id = '" . $session_id . "' AND
-		gov_id = '" . pg_escape_string ($conn, $gov_id) . "' AND
-		votedoc_url = '" . pg_escape_string ($conn, $url) . "'
+		gov_id = '" . pg_escape_string($conn, $gov_id) . "' AND
+		votedoc_url = '" . pg_escape_string($conn, $url) . "'
 		;
     ";
 
-    $result = pg_query ($conn, $sql);
+    $result = pg_query($conn, $sql);
     if ($result) {
-        if (pg_num_rows ($result) > 0) {
+        if (pg_num_rows($result) > 0) {
             return true;
         }
     }
     return false;
 }
+
 function voteLinkInsert($session_id, $gov_id, $url)
 {
     global $conn;
@@ -172,15 +173,78 @@ function voteLinkInsert($session_id, $gov_id, $url)
 				parladata_tmp_votelinks
 			(created_at, updated_at, session_id, gov_id, votedoc_url)
 			VALUES
-			(NOW(), NOW(), '" . $session_id . "', '" . pg_escape_string ($conn, $gov_id) . "', '" . pg_escape_string ($conn, $url) . "')
+			(NOW(), NOW(), '" . $session_id . "', '" . pg_escape_string($conn, $gov_id) . "', '" . pg_escape_string($conn, $url) . "')
 			RETURNING id
     ";
 
     $voting_id = 0;
-    $result = pg_query ($conn, $sql);
-    if (pg_affected_rows ($result) > 0) {
+    $result = pg_query($conn, $sql);
+    if (pg_affected_rows($result) > 0) {
         $insert_row = pg_fetch_row($result);
         $voting_id = $insert_row[0];
     }
     return $voting_id;
+}
+
+function checkIfSpeechInsertIsUnnecesaryDb($session_id, $date_start)
+{
+    global $conn;
+
+    $sql = "
+    SELECT speaker_id, content, \"order\", start_time, party_id
+FROM 					parladata_speech
+WHERE session_id = $session_id
+    AND valid_to = 'infinity'
+    and CAST(start_time as DATE) = '$date_start'
+    
+ORDER BY \"order\"
+";
+    //AND valid_to = 'infinity'
+//GROUP BY content, speaker_id, "order", start_time, party_id
+    //var_dump($sql);
+
+    $hash = '';
+    $result = pg_query($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+
+            $date = new DateTime($row["start_time"]);
+            $starttime = $date->format('Y-m-d');
+
+            $rrow = array($row["speaker_id"] . $row["content"] . $row["order"] . $starttime . $row["party_id"]);
+            file_put_contents("gitignore/checkIfSpeechInsertIsUnnecesaryDb.txt", print_r($rrow, true), FILE_APPEND);
+            $hash .= md5($row["speaker_id"] . $row["content"] . $row["order"] . $starttime . $row["party_id"]);
+
+        }
+    }
+
+
+    return md5($hash);
+}
+
+function checkIfSpeechInsertIsUnnecesaryParsed($speech_date, $speech)
+{
+    $order = 0;
+
+    $hash = '';
+    foreach ($speech['talks'] as $talk) {
+        $order += 10;
+
+        if ($talk['id'] == 0) {
+            $person_id = addPerson($talk['ime']);
+            if (!empty ($person_id)) {
+                $talk['id'] = $person_id;
+            } else {
+                continue;
+            }
+        }
+
+        $row = array($talk['id'] . $talk['vsebina'] . $order . $speech_date . getPersonOrganization($talk['id']));
+        file_put_contents("gitignore/checkIfSpeechInsertIsUnnecesaryParsed.txt", print_r($row, true), FILE_APPEND);
+
+        $hash .= md5($talk['id'] . $talk['vsebina'] . $order . $speech_date . getPersonOrganization($talk['id']));
+    }
+
+    return md5($hash);
+
 }
