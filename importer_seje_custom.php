@@ -7,6 +7,9 @@
 require 'vendor/autoload.php';
 include_once('inc/config_custom.php');
 
+//checkIfSpeechInsertIsUnnecesaryDb(9379, "2017-03-20");
+//die();
+
 function importerUsage(){
     die("<<<USAGE
 Usage:  php importer_seje_custom.php session_id=0 skip_when_reviews=true update_sessions_in_review=false parse_speeches=false parse_votes=false parse_docs=false parse_speeches_force=false  > /dev/null &
@@ -17,7 +20,7 @@ update_sessions_in_review = true/false
 parse_speeches = true/false
 parse_votes = true/false
 
-parse_speeches = true/false .. force update
+parse_speeches_force = true/false .. force update
  
 USAGE;");
 }
@@ -25,9 +28,13 @@ USAGE;");
 // php importer_seje_custom.php session_id=0 skip_when_reviews=true update_sessions_in_review=false parse_speeches=false parse_votes=false
 if (count($argv) == 1) importerUsage();
 
+/*
+if(file_get_contents('/home/parladaddy/parlalize/parser.lock') != "UNLOCKED"){
+    die("parlalize in progress, skipping parser");
+}
+*/
 
-
-$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs');
+$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs', 'parse_speeches_force');
 
 
 $sessionCustomOptions = array();
