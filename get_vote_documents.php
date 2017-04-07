@@ -20,7 +20,7 @@ parseSessionsSingleForDoc($content, $session['organization_id'], $session);
 die();
 */
 
-$all = (80/2);
+$all = (100/2);
 $offset = 2;
 $limit = 2;
 for ($i=0; $i < $all; $i++) {
