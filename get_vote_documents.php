@@ -121,8 +121,6 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                             foreach ($votearea->find('tbody tr') as $votesResults) {
 
                                 $voteLinkExists = false;
-
-
                                 $votes = $votesResults->find('td a.outputLink');
 
                                 $datum = '';

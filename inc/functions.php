@@ -69,8 +69,10 @@ function downloadPage ($url, $ctx = null)
 		// Log
 		logger ('TIMEOUT: ' . (string)$url);
 
-		if (MAIL_NOTIFY)
-			mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+		if (MAIL_NOTIFY) {
+            mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+            sendReport('[OMFG PANIC!!1!] DZ-RS unreachable, Shutdown: getting timeouts.');
+        }
 
 		die('Shutdown: getting timeouts.');
 	}
