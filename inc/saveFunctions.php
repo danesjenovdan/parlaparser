@@ -361,13 +361,22 @@ function handleSessionSpeeches($session, $session_id){
             var_dump($hashPotencial);
 
             if($hashDb != $hashPotencial){
-                //remove from array
-                //unset($session['speeches'][$speech_date]);
                 $checkIfUpdateNeeded = true;
+
+                if ($session['review_ext'] == 1 && $session['review'] == 1) {
+                    if (PARSE_SPEECHES_FORCE) {
+                        $sqlUpdate = "
+                UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
+                AND valid_to = 'infinity'
+                and CAST(start_time as DATE) = '$speech_date'
+                ";
+                        pg_query($conn, $sqlUpdate);
+                    }
+
             }
         }
     }
-    //if(count($duplicatedsession['speeches']) == count($session['speeches'])){
+
     if($checkIfUpdateNeeded) {
 
         var_dump("count" . count($session['speeches']));
@@ -380,12 +389,12 @@ function handleSessionSpeeches($session, $session_id){
                 ";
                 pg_query($conn, $sqlUpdate);
             } else if ($session['review_ext'] == 1 && $session['review'] == 1) {
-                if (PARSE_SPEECHES_FORCE) {
-                    $sqlUpdate = "
-                UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
-                ";
-                    pg_query($conn, $sqlUpdate);
-                }
+                //if (PARSE_SPEECHES_FORCE) {
+                //    $sqlUpdate = "
+                //UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
+                //";
+                //    pg_query($conn, $sqlUpdate);
+                //}
             } else {
 
             }
