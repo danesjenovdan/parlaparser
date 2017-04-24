@@ -81,7 +81,7 @@ function getTmpVotesLinkForDocumentsList(){
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
-        while ($row = pg_fetch_assoc($result)) {
+        while ($row =   pg_fetch_assoc($result)) {
             $array[] = $row;
         }
     }

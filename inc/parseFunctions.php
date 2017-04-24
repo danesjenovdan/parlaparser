@@ -46,7 +46,7 @@ function parseSessionsList($content, $organization_id)
             'review_ext' => false
         );
 
-        if ($date < new DateTime('NOW')) {
+        if ($date <= new DateTime('NOW')) {
 
             if(sessionDeleted($session_nouid)){
                 continue;
@@ -759,7 +759,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         'review_ext' => false
     );
 
-    if ($date < new DateTime('NOW')) {
+    if ($date <= new DateTime('NOW')) {
 
         if(sessionDeleted($session_nouid)){
             return false;
