@@ -96,9 +96,10 @@ function getTmpVotesLinkDocuments(){
     global $conn;
 
     //SELECT * FROM parladata_tmpvoteslinkdocuments where epa != '' AND session_id = 5572
-    //SELECT * FROM parladata_tmpvoteslinkdocuments where id = 158
+    //SELECT * FROM parladata_tmpvoteslinkdocuments where id = 4976
+    //SELECT * FROM parladata_tmpvoteslinkdocuments where epa != ''
     $sql = "
-	  SELECT * FROM parladata_tmpvoteslinkdocuments where epa != ''
+	  SELECT * FROM parladata_tmpvoteslinkdocuments where id = 4976
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
@@ -133,6 +134,7 @@ function searchInAllSections($unid, $session_id, $datum, $data){
     $searchInMe[] = 'xml/PA7.XML';
     $searchInMe[] = 'xml/SA.XML';
     $searchInMe[] = 'xml/PB.XML';
+
 
     foreach ($searchInMe as $xmlFile) {
 
@@ -205,6 +207,36 @@ function searchInAllSections($unid, $session_id, $datum, $data){
             }
 
         }
+
+
+        foreach ($xml->OBRAVNAVA_PREDPISA as $obravnava_predpisa) {
+            if(stripos($obravnava_predpisa->KARTICA_OBRAVNAVE_PREDPISA->UNID, $unid) !== false){
+                $povezani_predpisi_unid = $obravnava_predpisa->KARTICA_OBRAVNAVE_PREDPISA->UNID;
+                echo ((string)$povezani_predpisi_unid) . "\r\n";
+                searchInOBRAVNAVA_PREDPISA($xmlFile, (string)$povezani_predpisi_unid);
+
+                $date = DateTime::createFromFormat('d.m.Y', $datum)->format('Y-m-d');
+
+                $motionName = (!empty ($data['naslov2'])) ? $data['naslov2'] . ' - ' . $data['dokument2'] : $data['dokument2'];
+                $motion = findExistingMotion(95, $session_id, $date, $motionName);
+
+                $motionId = (!empty($motion["id"])) ? $motion["id"] : false;
+
+                var_dump($motion);
+                var_dump($motionId);
+                print_r($items); echo "\r\n";
+
+                if ($motionId) {
+                    $id = insertVotingDocument($motionId, 95, $session_id, $date, $motionName, $items);
+                    print_r("inserted: ");
+                    print_r($id);
+                } else {
+                    print_r("nogo");
+                    //var_dump($item);
+                }
+            }
+        }
+
 
     }
 
