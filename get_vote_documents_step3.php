@@ -81,7 +81,8 @@ CREATE TABLE parladata_tmpvoteslinkdocuments
     epa_link TEXT,
     inserted VARCHAR(20),
     dokument2 TEXT,
-    naslov2 TEXT
+    naslov2 TEXT,
+	uid varchar(200)
 );
 
 CREATE SEQUENCE parladata_tmpvoteslinkdocuments_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
@@ -99,7 +100,7 @@ function getTmpVotesLinkDocuments(){
     //SELECT * FROM parladata_tmpvoteslinkdocuments where id = 4976
     //SELECT * FROM parladata_tmpvoteslinkdocuments where epa != ''
     $sql = "
-	  SELECT * FROM parladata_tmpvoteslinkdocuments where id = 4976
+	  SELECT * FROM parladata_tmpvoteslinkdocuments where epa != ''
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {
