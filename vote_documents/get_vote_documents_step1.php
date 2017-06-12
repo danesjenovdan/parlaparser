@@ -8,23 +8,12 @@ include_once('inc/config.php');
 $people = getPeople();
 $people_new = array();
 
-/*
-//8940
-//8972
-//9158
-$session = getSessionById(8940);
-$url = 'http://www.dz-rs.si' . htmlspecialchars_decode($session['gov_id']);
-var_dump($url);
-$content = file_get_contents($url);
-parseSessionsSingleForDoc($content, $session['organization_id'], $session);
-die();
-*/
-
-$all = (100/2);
-$offset = 2;
-$limit = 2;
-for ($i=0; $i < $all; $i++) {
-    $sessions = getAllSessionsByOrganizationId(95, $limit, ($i*$offset));
+//$all = (200/2);
+//$offset = 2;
+//$limit = 2;
+//for ($i=0; $i < $all; $i++) {
+    //$sessions = getAllSessionsByOrganizationId(95, $limit, ($i*$offset), "DESC");
+    $sessions = getAllSessionsByOrganizationId(95, 10, 0, "DESC");
     if (count($sessions) > 0) {
         foreach ($sessions as $session) {
 
@@ -34,7 +23,7 @@ for ($i=0; $i < $all; $i++) {
             }
         }
     }
-}
+//}
 
 function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 {
@@ -95,13 +84,11 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                     $postdata = http_build_query(
                         array(
                             $form_id . ':form1' => $form_id . ':form1',
-                            // $form_id . ':form1:menu1' => CURRENT_SESSION,
                             $form_id . ':form1:tableEx1:goto1__pagerGoButton.x' => 11,
                             $form_id . ':form1:tableEx1:goto1__pagerGoButton.y' => 11,
                             $form_id . ':form1:tableEx1:goto1__pagerGoText' => $i,
                             $form_id . ':form1_SUBMIT' => 1,
-                            'javax.faces.ViewState' => $matchess[1],
-                            // 'javax.faces.ViewState' => '/wps/PA_DZ-LN-Seje/portlet/SejeIzbranaSejaView.jsp',
+                            'javax.faces.ViewState' => $matchess[1]
                         )
                     );
                     $opts = array('http' =>
@@ -177,12 +164,12 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
                                     $votesData["vote_link"] = DZ_URL . $voteLink;
                                     $votesData["epa_link"] = DZ_URL . $epaLink;
                                     $votesData["inserted"] = date("YmdHi");
+                                    $votesData["uid"] = getUIDFromLink(DZ_URL . $voteLink);
                                     $link_id = insertTmpVotesLinkForDocuments($votesData);
 
                                     var_dump($link_id);
 
                                 }
-
 
 
                             }
@@ -204,8 +191,6 @@ function parseSessionsSingleForDoc($content, $organization_id, $sessionData)
 function insertTmpVotesLinkForDocuments($data){
     global $conn;
 
-
-
     $session_id = $data["session_id"];
     $ura = $data["ura"];
     $datum = $data["datum"];
@@ -215,12 +200,14 @@ function insertTmpVotesLinkForDocuments($data){
     $voteLink = $data["vote_link"];
     $epaLink = $data["epa_link"];
     $inserted = $data["inserted"];
+    $uid = $data["uid"];
 
     $sql = "
-    INSERT INTO parladata_tmpvoteslinkdocuments (session_id, ura, datum, kvorum, epa, dokument, vote_link, epa_link, inserted) VALUES 
+    INSERT INTO parladata_tmpvoteslinkdocuments (session_id, ura, datum, kvorum, epa, dokument, vote_link, epa_link, inserted, uid) VALUES 
     ( " . pg_escape_string($conn, $session_id) . ", '" . pg_escape_string($conn, $ura) . "', '" . pg_escape_string($conn, $datum) . "', 
     '" . pg_escape_string($conn, $kvorum) . "', '" . pg_escape_string($conn, $epa) . "', '" . pg_escape_string($conn, $dokument) . "', 
-    '" . pg_escape_string($conn, $voteLink) . "', '" . pg_escape_string($conn, $epaLink) . "', '" . pg_escape_string($conn, $inserted) . "')
+    '" . pg_escape_string($conn, $voteLink) . "', '" . pg_escape_string($conn, $epaLink) . "', '" . pg_escape_string($conn, $inserted) . "',
+    '" . pg_escape_string($conn, $uid) . "')
 					RETURNING id
 				";
     $result = pg_query($conn, $sql);
