@@ -436,7 +436,9 @@ limit $limit OFFSET $offset;
     }
     return $array;
 }
-function getAllSessionsByOrganizationId($orgId, $limit, $offset)
+
+
+function getAllSessionsByOrganizationId($orgId, $limit, $offset, $order)
 {
     global $conn;
 
@@ -446,8 +448,7 @@ function getAllSessionsByOrganizationId($orgId, $limit, $offset)
 		FROM
 			parladata_session
 			WHERE organization_id = $orgId
-      order by id ASC
-limit $limit OFFSET $offset;
+      order by id $order limit $limit OFFSET $offset;
 	";
     $result = pg_query ($conn, $sql);
     if ($result) {

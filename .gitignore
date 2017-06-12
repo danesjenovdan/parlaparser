@@ -7,4 +7,7 @@ gitignore/
 inc/config.php
 inc/config_custom.php
 questions/VPP.XML
-data_validator/
+data_validator0/
+scriptsexperiment0/
+sqls.txt
+tmp.html
