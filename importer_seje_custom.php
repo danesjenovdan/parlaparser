@@ -7,9 +7,6 @@
 require 'vendor/autoload.php';
 include_once('inc/config_custom.php');
 
-//checkIfSpeechInsertIsUnnecesaryDb(9379, "2017-03-20");
-//die();
-
 function importerUsage(){
     die("<<<USAGE
 Usage:  php importer_seje_custom.php session_id=0 skip_when_reviews=true update_sessions_in_review=false parse_speeches=false parse_votes=false parse_docs=false parse_speeches_force=false  > /dev/null &
@@ -28,14 +25,12 @@ USAGE;");
 // php importer_seje_custom.php session_id=0 skip_when_reviews=true update_sessions_in_review=false parse_speeches=false parse_votes=false
 if (count($argv) == 1) importerUsage();
 
-/*
+
 if(file_get_contents('/home/parladaddy/parlalize/parser.lock') != "UNLOCKED"){
     die("parlalize in progress, skipping parser");
 }
-*/
 
 $obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs', 'parse_speeches_force');
-
 
 $sessionCustomOptions = array();
 foreach ($argv as $arg) {
@@ -47,9 +42,7 @@ foreach ($argv as $arg) {
     if (!in_array($x, $obligatoryFields)) {
         importerUsage();
     }
-
     $sessionCustomOptions["$x"] = $y;
-
 }
 
 
@@ -62,11 +55,9 @@ define('PARSE_DOCS', ($sessionCustomOptions['parse_docs'] == 'true') ? true : fa
 
 define('FORCE_UPDATE', true);
 
-
 // Get people array
 $people = getPeople();
 $people_new = array();
-
 
 if ($sessionCustomOptions['session_id'] > 0) {
 
@@ -80,7 +71,7 @@ if ($sessionCustomOptions['session_id'] > 0) {
     die();
 
 } else {
-    //die('die allall');
+
     $urls = array(
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/redne',
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
@@ -94,9 +85,4 @@ if ($sessionCustomOptions['session_id'] > 0) {
 
 sendReport();
 sendSms("DND done");
-
-
-// Do things on end
 parserShutdown();
-
-
