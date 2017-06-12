@@ -12,7 +12,7 @@ Parser. Yes, it's what this is. It parses stuff. Pretty impressive, I know. It c
 ```
 
 
-#Get urls
+# Get urls
 1. redne seje DZ
 2. izredne seje DZ
 3. seje delovnih teles
@@ -21,7 +21,7 @@ Parser. Yes, it's what this is. It parses stuff. Pretty impressive, I know. It c
 - skip sessions in future
 - check what to parse
 
-#Get/parse data from url  
+# Get/parse data from url  
 
 tear apart html and find parts of html
 - speeches
@@ -34,7 +34,7 @@ insert/update all data to session, append speeches, votes, documents
 
 why we parse all sessions ? you can never know waht to expect from DZ
 
-#Cronjobs
+# Cronjobs
 0 1 * * * php /mnt/web/parlaparser/importer_seje.php
 
 0 3 * * * cd /mnt/web/parlaparser/; php get_shared_sessions.php
