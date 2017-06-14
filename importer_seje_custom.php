@@ -26,7 +26,8 @@ USAGE;");
 if (count($argv) == 1) importerUsage();
 
 
-if(file_get_contents('/home/parladaddy/parlalize/parser.lock') != "UNLOCKED"){
+
+if(file_get_contents(LOCK_LOCATION . '/parser.lock') != "UNLOCKED") {
     die("parlalize in progress, skipping parser");
 }
 

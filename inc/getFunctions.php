@@ -370,27 +370,7 @@ function sessionDeleted($session_id)
         }
     }
     return false;
-    /*
-CREATE TABLE parladata_session_deleted
-(
-    id INTEGER PRIMARY KEY NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    name VARCHAR(255),
-    gov_id VARCHAR(255),
-    start_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    organization_id INTEGER,
-    classification VARCHAR(128),
-    mandate_id INTEGER,
-    in_review BOOLEAN NOT NULL
-);
-CREATE SEQUENCE parladata_session_deleted_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
-ALTER TABLE parladata_session_deleted ALTER COLUMN id SET DEFAULT nextval('parladata_session_deleted_id_seq');
-ALTER SEQUENCE parladata_session_deleted_id_seq OWNED BY parladata_session_deleted.id;
-GRANT ALL PRIVILEGES ON TABLE parladata_session_deleted TO parladaddy;
 
-     */
 }
 function sessionDeletedById($session_id)
 {

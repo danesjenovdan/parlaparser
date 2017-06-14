@@ -1,25 +1,5 @@
 <?php
 
-/*
-CREATE TABLE parladata_tmp_questions
-(
-    id INTEGER PRIMARY KEY NOT NULL,
-    datum VARCHAR(20),
-    naslov TEXT,
-    vlagatelj TEXT,
-    naslovljenec TEXT,
-    url TEXT,
-    docname TEXT
-);
-
-CREATE SEQUENCE parladata_tmp_questions_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
-ALTER TABLE parladata_tmp_questions ALTER COLUMN id SET DEFAULT nextval('parladata_tmp_questions_id_seq');
-ALTER SEQUENCE parladata_tmp_questions_id_seq OWNED BY parladata_tmp_questions.id;
-GRANT ALL PRIVILEGES ON TABLE parladata_tmp_questions TO parladaddy;
-GRANT USAGE, SELECT ON SEQUENCE parladata_tmp_questions_id_seq TO parladaddy;
-
- */
-
 
 function questionExists($dateString, $title, $applicant, $addressee, $url, $docname)
 {

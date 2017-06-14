@@ -67,31 +67,6 @@ function getRedirectedUid($url){
 
 }
 
-/*
-CREATE TABLE parladata_tmpvoteslinkdocuments
-(
-    id INTEGER PRIMARY KEY NOT NULL,
-    session_id INTEGER,
-    ura VARCHAR(20),
-    datum VARCHAR(20),
-    kvorum VARCHAR(50),
-    epa VARCHAR(20),
-    dokument TEXT,
-    vote_link TEXT,
-    epa_link TEXT,
-    inserted VARCHAR(20),
-    dokument2 TEXT,
-    naslov2 TEXT,
-	uid varchar(200)
-);
-
-CREATE SEQUENCE parladata_tmpvoteslinkdocuments_id_seq NO MINVALUE NO MAXVALUE NO CYCLE;
-ALTER TABLE parladata_tmpvoteslinkdocuments ALTER COLUMN id SET DEFAULT nextval('parladata_tmpvoteslinkdocuments_id_seq');
-ALTER SEQUENCE parladata_tmpvoteslinkdocuments_id_seq OWNED BY parladata_tmpvoteslinkdocuments.id;
-GRANT ALL PRIVILEGES ON TABLE parladata_tmpvoteslinkdocuments TO parladaddy;
-GRANT USAGE, SELECT ON SEQUENCE parladata_tmpvoteslinkdocuments_id_seq TO parladaddy;
-
- */
 
 function getTmpVotesLinkDocuments(){
     global $conn;
