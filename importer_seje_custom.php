@@ -17,7 +17,7 @@ update_sessions_in_review = true/false
 parse_speeches = true/false
 parse_votes = true/false
 
-parse_speeches = true/false .. force update
+parse_speeches_force = true/false .. force update
  
 USAGE;");
 }
@@ -26,9 +26,11 @@ USAGE;");
 if (count($argv) == 1) importerUsage();
 
 
+if(file_get_contents('/home/parladaddy/parlalize/parser.lock') != "UNLOCKED"){
+    die("parlalize in progress, skipping parser");
+}
 
-$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs');
-
+$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs', 'parse_speeches_force');
 
 $sessionCustomOptions = array();
 foreach ($argv as $arg) {
@@ -40,9 +42,7 @@ foreach ($argv as $arg) {
     if (!in_array($x, $obligatoryFields)) {
         importerUsage();
     }
-
     $sessionCustomOptions["$x"] = $y;
-
 }
 
 
@@ -53,11 +53,11 @@ define('PARSE_SPEECHES_FORCE', ($sessionCustomOptions['parse_speeches_force'] ==
 define('PARSE_VOTES', ($sessionCustomOptions['parse_votes'] == 'true') ? true : false);
 define('PARSE_DOCS', ($sessionCustomOptions['parse_docs'] == 'true') ? true : false);
 
+define('FORCE_UPDATE', true);
 
 // Get people array
 $people = getPeople();
 $people_new = array();
-
 
 if ($sessionCustomOptions['session_id'] > 0) {
 
@@ -71,7 +71,7 @@ if ($sessionCustomOptions['session_id'] > 0) {
     die();
 
 } else {
-    //die('die allall');
+
     $urls = array(
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/redne',
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
@@ -85,9 +85,4 @@ if ($sessionCustomOptions['session_id'] > 0) {
 
 sendReport();
 sendSms("DND done");
-
-
-// Do things on end
 parserShutdown();
-
-

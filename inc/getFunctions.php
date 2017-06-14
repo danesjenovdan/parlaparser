@@ -297,6 +297,38 @@ function getSessionById($session_id){
     return false;
 }
 
+
+/**
+ * @param $session_id
+ * @return array|bool
+ */
+function getSessionsOrderByDate($limit, $org_id){
+    global $conn;
+
+    $org_sql = (intval($org_id) > 0) ? "WHERE organization_id = '" . pg_escape_string ($conn, $org_id) . "'" : "";
+
+    $array = array();
+    $sql = "
+		SELECT
+			*
+		FROM
+			parladata_session
+		$org_sql
+		ORDER BY id DESC
+		  limit '" . pg_escape_string ($conn, $limit) . "'
+		  offset 0
+		;
+	";
+
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+            $array[] = $row;
+        }
+    }
+    return $array;
+}
+
 function getSessionsShared()
 {
     global $conn;
@@ -403,4 +435,110 @@ limit $limit OFFSET $offset;
         }
     }
     return $array;
+}
+
+
+function getAllSessionsByOrganizationId($orgId, $limit, $offset, $order)
+{
+    global $conn;
+
+    $sql = "
+	SELECT
+			*
+		FROM
+			parladata_session
+			WHERE organization_id = $orgId
+      order by id $order limit $limit OFFSET $offset;
+	";
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
+            $array[] = $row;
+        }
+    }
+    return $array;
+}
+
+
+function findExistingMotion($organization_id, $session_id, $date, $name)
+{
+    global $conn;
+
+    $sql = "
+			select * from 
+				parladata_motion
+			where 
+              organization_id = '" . $organization_id . "' and 
+			  CAST(date AS DATE) = '" . $date . "' and
+			  session_id = '" . $session_id . "' and
+			  text = '" . $name . "' and
+			  party_id = '" . $organization_id . "'
+			;
+		";
+
+/*
+    $sql = "
+			select * from 
+				parladata_motion
+			where 
+              organization_id = '" . $organization_id . "' and 
+			  CAST(date AS DATE) = '" . $date . "' and
+			  session_id = '" . $session_id . "' and
+			  text like '%" . $name . "%' and
+			  party_id = '" . $organization_id . "'
+			;
+		";
+*/
+    print_r($sql);
+
+    $result = pg_query ($conn, $sql);
+    $mResultArray = null;
+    if ($result) {
+        if (pg_num_rows($result) > 0) {
+            return pg_fetch_assoc($result);
+        }
+    }
+    return false;
+}
+
+
+function documentLinkExists($motionId, $organization_id, $session_id, $date, $name, $item){
+    global $conn;
+    $return = array();
+
+    $urlName = $item['urlName'];
+    $urlLink = $item['urlLink'];
+
+    $sql = "
+select * from
+						parladata_link
+						where
+						url = '" . pg_escape_string($conn, $urlLink) . "' and
+                        note = '" . pg_escape_string($conn, $urlName) . "' and
+                        organization_id = '" . $organization_id . "' and
+                        date = '" . pg_escape_string($conn, $date) . "' and
+                        session_id = '" . $session_id . "' and
+                        motion_id = '" . $motionId . "'
+					
+					;
+				";
+//			name = '" . pg_escape_string($conn, $name) . "' and
+    /*
+    select * from
+						parladata_link
+						where
+						url = '" . pg_escape_string($conn, $urlLink) . "'
+                        */
+
+    print_r($sql);
+
+    $result = pg_query ($conn, $sql);
+    $mResultArray = null;
+    if ($result) {
+        if (pg_num_rows($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+
 }
