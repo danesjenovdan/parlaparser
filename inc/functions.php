@@ -69,8 +69,10 @@ function downloadPage ($url, $ctx = null)
 		// Log
 		logger ('TIMEOUT: ' . (string)$url);
 
-		if (MAIL_NOTIFY)
-			mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+		if (MAIL_NOTIFY) {
+            mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+            sendReport('[OMFG PANIC!!1!] DZ-RS unreachable, Shutdown: getting timeouts.');
+        }
 
 		die('Shutdown: getting timeouts.');
 	}
@@ -160,4 +162,17 @@ function validateDate($date)
 {
     $d = DateTime::createFromFormat('d.m.Y', $date);
     return $d && $d->format('d.m.Y') === $date;
+}
+
+function asciireplace($in){
+    $search = array();
+    $replace = array();
+    $search[] = '&#382;';
+    $replace[] = 'ž';
+    $search[] = '&#353;';
+    $replace[] = 'š';
+    $search[] = '&#269;';
+    $replace[] = 'č';
+
+    return str_replace($search, $replace, $in);
 }
