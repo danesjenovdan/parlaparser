@@ -27,7 +27,7 @@ function parseSessionsList($content, $organization_id)
         $session_nouid = preg_replace('/\&uid.*$/is', '', $session_link);
 
         // Date
-        if ($organization_id != 95) {
+        if ($organization_id != 1) {
             $date = trim($link->parent()->next_sibling()->next_sibling()->next_sibling()->text());
         } else {
             $date = trim($link->parent()->next_sibling()->next_sibling()->text());
@@ -46,9 +46,12 @@ function parseSessionsList($content, $organization_id)
             'review_ext' => false
         );
 
-        if ($date < new DateTime('NOW')) {
+        if ($date <= new DateTime('NOW')) {
 
-
+            if(sessionDeleted($session_nouid)){
+                continue;
+            }
+			
             // Check if session already imported
             if ($exists = sessionExists($session_nouid)) {
                 if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) continue;
@@ -63,7 +66,12 @@ function parseSessionsList($content, $organization_id)
 
             // Get session
             $session_link = str_replace('&amp;', '&', $session_link); // Some weird shit changed recently on DZRS server
-            $session = str_get_html(downloadPage(DZ_URL . $session_link));
+
+            $contentSession = downloadPage(DZ_URL . $session_link);
+
+            $session = str_get_html($contentSession);
+
+            var_dumpp(DZ_URL . $session_link);
 
             //	Retrieve cookies
             $cookiess = '';
@@ -76,11 +84,20 @@ function parseSessionsList($content, $organization_id)
             $cookiess = substr($cookiess, 0, -2);
 
             // Parse data
+            $today = new DateTime();
             $tmp['speeches'] = array();
             $k = 0;
             if (PARSE_SPEECHES) {
-                if ($session->find('td.vaTop', 3)) {
-                    $sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
+                $tableFakeIndex = 3;
+                if ($session->find('td.vaTop', $tableFakeIndex)) {
+                    $sptable = $session->find('td.vaTop', $tableFakeIndex)->find('a.outputLink');
+                    if (empty ($sptable)) {
+                        $tableFakeIndex = 4;
+                    }
+                }
+
+                if ($session->find('td.vaTop', $tableFakeIndex)) {
+                    $sptable = $session->find('td.vaTop', $tableFakeIndex)->find('a.outputLink');
 
                     if (!empty ($sptable)) {
                         $parseSpeeches = array();
@@ -93,6 +110,11 @@ function parseSessionsList($content, $organization_id)
                             $datum = '';
                             if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
                                 $datum = DateTime::createFromFormat('d.m.Y', $matches[1])->format('Y-m-d');
+                            }
+
+                            $datumFull = new DateTime($datum);
+                            if($datumFull > $today){
+                                continue;
                             }
 
                             //check here
@@ -148,10 +170,10 @@ function parseSessionsList($content, $organization_id)
                                 sleep(FETCH_TIMEOUT);
 
                                 if(empty($tmp['id'])){
-                                    var_dump($tmp['link_noid']);
+                                    var_dumpp($tmp['link_noid']);
                                     //continue 2;
                                 }
-                                var_dump("documetn parse" . $tmp['id']);
+                                var_dumpp("documetn parse" . $tmp['id']);
 
 
                             } else {
@@ -166,66 +188,8 @@ function parseSessionsList($content, $organization_id)
             $tmp['voting'] = array();
             if (PARSE_VOTES) {
 
-                //  Search on DT page or not TODO: better solution needed
-                preg_match('/form id="(.*?):form1"/', $session, $fmatches);
-                $form_id = $fmatches[1];
-
-                //	Retreive pager form action
-                preg_match('/form id="' . $form_id . ':form1".*?action="(.*?)"/', $session, $matches);
-
-                //	Retreive some ViewState I have no fucking clue what it is for, but it must be present in POST
-                preg_match('/id="javax\.faces\.ViewState" value="(.*?)"/', $session, $matchess);
-
-                //	Retreive number of pages
-                preg_match('/Page 1 of (\d+)/i', $session, $matchesp);
-
-                if (!empty($matchesp[1]) && (int)$matchesp[1] > 0) {
-
-
-                    for ($i = 1; $i <= (int)$matchesp[1]; $i++) {
-
-                        var_dumpp($i);
-
-                        //	Get next page
-                        $postdata = http_build_query(
-                            array(
-                                $form_id . ':form1' => $form_id . ':form1',
-                                // $form_id . ':form1:menu1' => CURRENT_SESSION,
-                                $form_id . ':form1:tableEx1:goto1__pagerGoButton.x' => 11,
-                                $form_id . ':form1:tableEx1:goto1__pagerGoButton.y' => 11,
-                                $form_id . ':form1:tableEx1:goto1__pagerGoText' => $i,
-                                $form_id . ':form1_SUBMIT' => 1,
-                                'javax.faces.ViewState' => $matchess[1],
-                                // 'javax.faces.ViewState' => '/wps/PA_DZ-LN-Seje/portlet/SejeIzbranaSejaView.jsp',
-                            )
-                        );
-                        $opts = array('http' =>
-                            array(
-                                'method' => 'POST',
-                                'header' => 'Cookie: ' . $cookiess . "\r\n" . 'Content-type: application/x-www-form-urlencoded',
-                                'content' => $postdata
-                            )
-                        );
-                        $context = stream_context_create($opts);
-
-                        if ($subpage = file_get_contents(DZ_URL . $matches[1], false, $context)) {
-
-                            $votearea = str_get_html($subpage)->find('table.dataTableExHov', 0);
-                            if (!empty ($votearea)) {
-
-                                foreach ($votearea->find('tbody td a.outputLink') as $votes) {
-                                    if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
-                                        $tmp['voting'][] = parseVotes(DZ_URL . $votes->href);
-                                        sleep(FETCH_TIMEOUT);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    //saveVotes($tmp, $organization_id);
-
-                }
+                file_put_contents("s0.html", $contentSession);
+                $tmp = parseVotesBase($session, $cookiess, $tmp);
 
             }
 
@@ -233,6 +197,7 @@ function parseSessionsList($content, $organization_id)
             //print_r ($tmp);
             //exit();
 
+            var_dumpp($tmp['voting']);
 
             //	Add to DB
             saveSession($tmp, $organization_id);
@@ -368,14 +333,19 @@ function parseSpeeches($url, $datum)
     $content = preg_replace('/<br>/', "\n", $content);
 
     // Umik "TRAK ..."
+    $content = preg_replace('/[\n\r](<b>)?(<font size="4" face="Arial CE">)?(\d+\. TRAK[:a-zA-Z0-9\(\)\-–\. ]*)(<\/font>)?(<\/b>)?[\n\r]/s', '', $content);
+    $content = preg_replace('/[\n\r](<b>)?(\d+\. TRAK[:a-zA-Z0-9\(\)\-–\. ]*)(<\/b>)?[\n\r]/s', '', $content);
+    $content = preg_replace('/(<b>)?(\d+\. TRAK[:a-zA-Z0-9\(\)\-–\. ]*)(<\/b>)?/s', '', $content);
     $content = preg_replace('/[\n\r](<b>)?(\d+\. TR.*?)(<\/b>)?[\n\r]/s', '', $content);
 
     // Umik "(nadaljevanje")
-    $content = preg_replace('/([\n\r]+\t\(nadaljevanje\)? )/is', ' ', $content);
+    //$content = preg_replace('/([\n\r]+\t\(nadaljevanje\)? )/is', ' ', $content);
+    $content = preg_replace('/([\n\r ]*\(nadaljevanje\)? )/s', ' ', $content);
 
     // Umik prekinitev sej
     $content = preg_replace('/(\t(<b>)?\(Seja.*?ob [\d\.]{5,6}\)(<\/b>)?[\n\r]+)/si', '', $content);
-
+    $content = preg_replace('/([\n\r](<b>)?\(?Seja je bila prekinjena ob \d+\..*?ob \d+\..*?\)?(<\/b>)?)[\n\r]/si', '', $content);
+    
     // Umik ure konca
     $content = preg_replace('/([\n\r](<b>)?\(?Seja je bila končana \d+\..*?ob.*\)?(<\/b>)?)/si', '', $content);
     $content = preg_replace('/([\n\r](<b>)?\(?Seja se je končala \d+\..*?ob.*\)?(<\/b>)?)/si', '', $content);
@@ -391,7 +361,7 @@ function parseSpeeches($url, $datum)
     $content = preg_replace('/([\n\r]+)/', "\n", trim($content));
 
     // Split govorov na posamezne dele
-    $parts = preg_split('/[\n\r][\t ]?<b>[\t ]*([<\/b>\tA-ZČŠŽĐÖĆÜ,\.\(\) ]{4,40}?(\([\w ]*?\))??)[: <\/b>]{2,6}/s', $content, null, PREG_SPLIT_DELIM_CAPTURE); // old: '/[\n\r]<b>([A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{3,}(\(.*?\))??)[: <\/b>]{2,6}/s'
+    $parts = preg_split('/[\n\r][\t ]?<b>[\t ]*([<\/b>\tA-ZČŠŽĐÖĆÜÁ_,\.\(\) ]{4,40}?(\([\w ]*?\))??)[: <\/b>]{2,6}/s', $content, null, PREG_SPLIT_DELIM_CAPTURE); // old: '/[\n\r]<b>([A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{3,}(\(.*?\))??)[: <\/b>]{2,6}/s'
 
     if (!empty ($parts)) {
         if (strpos(strip_tags($parts[0]), 'REPUBLIKA SLOVENIJA') === 0) {
@@ -403,10 +373,10 @@ function parseSpeeches($url, $datum)
         for ($i = $cnt; $i <= $end; $i++) {
 
             //	Iskanje osebe/imena
-            if (isset ($parts[$i]) && preg_match('/^[A-ZČŠŽĐÖĆÜ,\.]{2,}[A-ZČŠŽĐÖĆÜ,\. \(\)]{6,40}(\(.*?\))?/s', $parts[$i])) {
+            if (isset ($parts[$i]) && preg_match('/^[A-ZČŠŽĐÖĆÜÁ_,\.]{2,}[A-ZČŠŽĐÖĆÜÁ_,\. \(\)]{6,40}(\(.*?\))?/s', $parts[$i])) {
 
                 $name = trim($parts[$i]);
-                if (strpos($name, '(') > 0) $name = substr($name, 0, strrpos($name, '('));
+                if (strrpos($name, ')') == strlen($name)-1) $name = substr($name, 0, strrpos($name, '('));
 
                 //  Remove prefixes, some common typos
                 $replaces = array(
@@ -426,6 +396,7 @@ function parseSpeeches($url, $datum)
                     'podpredsedica',
                     'podpredsedik',
                     'predsednk',
+                    'podpresednik',
                     'predsedik',
                     'predsenik'
                 );
@@ -460,6 +431,9 @@ function parseSpeeches($url, $datum)
                 }
 
                 $array['talks'][] = $tmp;
+            }else{
+                echo "nisem najdu ";
+                echo $parts[$i];
             }
         }
     }
@@ -472,7 +446,7 @@ function parseSpeeches($url, $datum)
  * @param string $url URL to fetch
  * @return array Array of votes
  */
-function parseVotes($url)
+function parseVotes($url, $epa = null)
 {
     $array = array();
 
@@ -497,7 +471,7 @@ function parseVotes($url)
                 $array['time'] = $tmp[2];
             }
             if (strtolower($tdinfo) == 'epa:') {
-                $array['epa'] = $td->next_sibling()->text();
+                $array['epa'] = trim($td->next_sibling()->text());
                 $array['epa_link'] = $td->next_sibling()->find('a', 0)->href;
             }
             if (strtolower($tdinfo) == 'faza postopka:') {
@@ -522,6 +496,10 @@ function parseVotes($url)
     foreach ($content->find('tr') as $t) {
         if ($cnt > 0) {
             if (preg_match('/<td.*?>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td/', html_entity_decode($t->innertext), $matches)) {
+		//var_dump($matches);
+		//if ($cnt > 50) {
+			//die;
+		//}
                 unset ($matches[0]);
                 $matches[4] = getPersonIdByName(trim($matches['1']), true);
                 //  Test
@@ -531,8 +509,123 @@ function parseVotes($url)
         }
         $cnt++;
     }
+    if(empty($array['epa'])){
+        $array['epa'] = trim($epa);
+    }
 
+    if(empty($array['uid'])){
+        $array['uid'] = getUIDFromLink($url);
+    }
+    
     return $array;
+}
+
+
+function parseVotesDocument($url, $voteDate, $sessionId, $organizationId, $naslov, $dokument)
+{
+    $data = str_get_html(downloadPage(str_replace('&amp;', '&', $url)));
+    // Log
+    logger('FETCH VOTES: ' . $url);
+
+    $documentsData = array();
+
+    if($data->find('.listNoBtn')){
+        $documentsData = parseVotesDocumentList($data);
+    }else{
+        $documentsData[] = parseVotesDocumentSingle($data, null);
+    }
+
+    return array($voteDate, $sessionId, $organizationId, $documentsData, $naslov, $dokument);
+}
+
+
+function parseVotesDocumentList($documentsData)
+{
+    $data = array();
+    $potencialLinks = $documentsData->find('.listNoBtn');
+    foreach ($potencialLinks as $potencialLink) {
+        $links = $potencialLink->find('a');
+        foreach ($links as $link) {
+            $url = $link->href;
+            $data[] = parseVotesDocumentSingle(null, $url);
+
+        }
+        break;
+    }
+
+    return $data;
+}
+function parseVotesDocumentSingle($data, $url = null)
+{
+    sleep(FETCH_TIMEOUT);
+    if(!is_null($url)) {
+        $data = str_get_html(downloadPage(DZ_URL . str_replace('&amp;', '&', $url)));
+        // Log
+        logger('FETCH VOTES: ' . $url);
+    }
+
+    if(is_null($data)){
+        return false;
+    }
+
+    if(!($data->find('h2', 0))){
+        return false;
+    }
+
+    var_dumpp($url);
+    $note = $data->find('h2', 0)->text();
+    $epa = null;
+    $naslov1 = null;
+    $naslov2 = null;
+    $urlName = null;
+    $urlLink = null;
+
+    $tableTr = $data->find('.form table tr td');
+    foreach ($tableTr as $item) {
+
+        if(stripos($item->text(), 'EPA:') !== false) {
+            $t = explode(': ', $item->text());
+            //var_dumpp($t);die();
+            $epa = html_entity_decode(trim($t[1]));
+        }
+
+        if(stripos($item->text(), 'Naslov:') !== false) {
+            $t = explode(': ', $item->text());
+            $naslov1 = asciireplace(html_entity_decode(trim($t[1])));
+        }
+
+        if(stripos($item->text(), 'Naslov zadeve') !== false) {
+            $t = explode(': ', $item->text());
+            $naslov2 = asciireplace(trim($t[1]));
+        }
+
+        if(stripos($item->innertext(), 'window.open') !== false) {
+            $a = $item->find('a', 0);
+            $urlName = asciireplace($a->text());
+            $urlLink = str_replace('window.open(\'', '', $a->onclick);
+            $urlLink = substr($urlLink, 0, strpos($urlLink, "'"));
+        }
+
+    }
+
+    var_dumpp("end of vote doc");
+
+    var_dumpp(array(
+        'name' => $naslov1 . ' | ' .$naslov2,
+        'note' => $note,
+        'epa' => $epa,
+        'urlName' => $urlName,
+        'urlLink' => $urlLink
+    ));
+
+
+    return array(
+        'name' => $naslov1 . ' | ' .$naslov2,
+        'note' => $note,
+        'epa' => trim($epa),
+        'urlName' => $urlName,
+        'urlLink' => $urlLink
+    );
 }
 
 /**
@@ -620,10 +713,15 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
     if ($date < new DateTime('NOW')) {
 
+        if(sessionDeleted($session_nouid)){
+            return false;
+        }
         // Check if session already imported
         if ($exists = sessionExists($session_nouid)) {
-            if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
-                return false;
+            if(!FORCE_UPDATE) {
+                if ($exists['in_review'] == 'f' || ($exists['in_review'] == 't' && !UPDATE_SESSIONS_IN_REVIEW)) {
+                    return false;
+                }
             }
             $tmp['id'] = $exists['id']; // Set that session exists
             $tmp['review_ext'] = true;
@@ -643,15 +741,26 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         $cookiess = substr($cookiess, 0, -2);
 
         // Parse data
+        $today = new DateTime();
         $tmp['speeches'] = array();
         $k = 0;
         if (PARSE_SPEECHES) {
-            if ($session->find('td.vaTop', 3)) {
-                $sptable = $session->find('td.vaTop', 3)->find('a.outputLink');
+            var_dumpp("PARSE_SPEECHES");
+            echo "PARSE_SPEECHES";
+            $tableFakeIndex = 3;
+            if ($session->find('td.vaTop', $tableFakeIndex)) {
+                $sptable = $session->find('td.vaTop', $tableFakeIndex)->find('a.outputLink');
+                if (empty ($sptable)) {
+                    $tableFakeIndex = 4;
+                }
+            }
+            if ($session->find('td.vaTop', $tableFakeIndex)) {
+                $sptable = $session->find('td.vaTop', $tableFakeIndex)->find('a.outputLink');
 
                 if (!empty ($sptable)) {
                     $parseSpeeches = array();
                     foreach ($sptable as $speeches) {
+                        echo "  table   ";
                         $in_review = (bool)(stripos($speeches->innerText(), "pregled") !== false);
                         if ($in_review && SKIP_WHEN_REVIEWS) continue;
 
@@ -661,7 +770,11 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                         if (preg_match('/(\d{2}\.\d{2}\.\d{4})/is', $speeches->innerText(), $matches)) {
                             $datum = DateTime::createFromFormat('d.m.Y', $matches[1])->format('Y-m-d');
                         }
-
+                        
+                        $datumFull = new DateTime($datum);
+                        if($datumFull > $today){
+                            continue;
+                        }                        
                         //check here
                         $parseSpeeches[$k]['dateStart'] = $datum;
                         $parseSpeeches[$k]['url'] = DZ_URL . $speeches->href;
@@ -670,6 +783,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
                         $k++;
                     }
+                    //var_dump($parseSpeeches);
                     if (count($parseSpeeches) > 0) {
                         foreach ($parseSpeeches as $parseSpeeche) {
                             var_dumpp($parseSpeeche);
@@ -683,12 +797,10 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
 
                             } else {
 
-
                                 $speech = parseSpeeches($parseSpeeche['url'], $parseSpeeche['dateStart']);
                                 $tmp['speeches'][$speech['datum']] = $speech;
                                 $tmp['speeches'][$speech['datum']]['review'] = $parseSpeeche['in_review'];
                                 sleep(FETCH_TIMEOUT);
-
                                 if(isSpeechInReviewStatusChanged($parseSpeeche['sessionId'], $parseSpeeche['in_review'])){
                                     $tmp['speeches'][$speech['datum']]['insertToDb'] = 'parladata_speech';
                                 }else{
@@ -700,7 +812,7 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
                         //var_dumpp($tmp['speeches'][$speech['datum']]);
                     }
 
-                }
+                }else{echo "ni govorov";}
             }
         }
 
@@ -726,78 +838,46 @@ function parseSessionsSingle($content, $organization_id, $sessionData)
         // Parse voting data
         $tmp['voting'] = array();
         if (PARSE_VOTES) {
-            //  Search on DT page or not TODO: better solution needed
-            preg_match('/form id="(.*?):form1"/', $session, $fmatches);
-            $form_id = $fmatches[1];
 
-            //	Retreive pager form action
-            preg_match('/form id="' . $form_id . ':form1".*?action="(.*?)"/', $session, $matches);
-
-            //	Retreive some ViewState I have no fucking clue what it is for, but it must be present in POST
-            preg_match('/id="javax\.faces\.ViewState" value="(.*?)"/', $session, $matchess);
-
-            //	Retreive number of pages
-            preg_match('/Page 1 of (\d+)/i', $session, $matchesp);
-
-            if (!empty($matchesp[1]) && (int)$matchesp[1] > 0) {
-
-
-                for ($i = 1; $i <= (int)$matchesp[1]; $i++) {
-
-                    var_dumpp($i);
-
-                    //	Get next page
-                    $postdata = http_build_query(
-                        array(
-                            $form_id . ':form1' => $form_id . ':form1',
-                            // $form_id . ':form1:menu1' => CURRENT_SESSION,
-                            $form_id . ':form1:tableEx1:goto1__pagerGoButton.x' => 11,
-                            $form_id . ':form1:tableEx1:goto1__pagerGoButton.y' => 11,
-                            $form_id . ':form1:tableEx1:goto1__pagerGoText' => $i,
-                            $form_id . ':form1_SUBMIT' => 1,
-                            'javax.faces.ViewState' => $matchess[1],
-                            // 'javax.faces.ViewState' => '/wps/PA_DZ-LN-Seje/portlet/SejeIzbranaSejaView.jsp',
-                        )
-                    );
-                    $opts = array('http' =>
-                        array(
-                            'method' => 'POST',
-                            'header' => 'Cookie: ' . $cookiess . "\r\n" . 'Content-type: application/x-www-form-urlencoded',
-                            'content' => $postdata
-                        )
-                    );
-                    $context = stream_context_create($opts);
-
-                    if ($subpage = file_get_contents(DZ_URL . $matches[1], false, $context)) {
-
-                        $votearea = str_get_html($subpage)->find('table.dataTableExHov', 0);
-                        if (!empty ($votearea)) {
-
-                            foreach ($votearea->find('tbody td a.outputLink') as $votes) {
-                                if (preg_match('/\d{2}\.\d{2}\.\d{4}/is', $votes->text())) {
-                                    $tmp['voting'][] = parseVotes(DZ_URL . $votes->href);
-                                    sleep(FETCH_TIMEOUT);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                //saveVotes($tmp, $organization_id);
-
-            }
+            $tmp = parseVotesBase($session, $cookiess, $tmp);
 
         }
 
-        //	Test: Izpis podatkov celotne seje
-        //print_r ($tmp);
-        //exit();
+        if(UPDATE_UID){
+            if($tmp['id']>0) {
+                updateSessionVotesUid($tmp, $tmp['id'], $organization_id);
+                return "UPDATE_EPAS";
+            }
+            return "UPDATE_EPAS .. missing session id";
+        }
 
 
+        var_dumpp($tmp['id']);
+        if(UPDATE_EPAS){
+            if($tmp['id']>0) {
+                updateSessionVotesEpas($tmp, $tmp['id'], $organization_id);
+                return "UPDATE_EPAS";
+            }
+            return "UPDATE_EPAS .. missing session id";
+        }
+        
         //	Add to DB
-        saveSession($tmp, $organization_id);
-        var_dumpp("SAVE:");
+        //var_dump($tmp);
+        saveSession($tmp, $organization_id, false);
+        //var_dump("SAVE:");
         var_dumpp($organization_id);
     }
 
+}
+
+
+function getUIDFromLink($link){
+
+    $link = urldecode($link);
+    $link = html_entity_decode($link);
+
+    $parts = parse_url($link);
+    parse_str($parts['query'], $query);
+
+    return (isset($query['uid'])) ? $query['uid'] : '';
 }

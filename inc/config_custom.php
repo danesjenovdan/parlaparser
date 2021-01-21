@@ -15,27 +15,29 @@ ini_set ('default_socket_timeout', 180);
 ini_set ('memory_limit', '2048M');
 date_default_timezone_set ("Europe/Ljubljana");
 setlocale (LC_ALL, 'sl_SI.UTF8');
-error_reporting(0);
+error_reporting(E_ALL);
 //  [SETTING] Logging
-define ('LOG_PATH', 'log/trace.log');
+define ('LOG_PATH', '/home/parladaddy/parlaparser/log/trace.log');
 define ('FILTE_PATH', 'file/file.log');
 define ('LOGGING', true);
-ini_set('error_log', 'log/php.log');
+ini_set('error_log', '/home/parladaddy/parlaparser/log/php.log');
 
 //	Includes
 include_once 'simple_html_dom.php';
 include_once 'checkSpeeches.php';
 include_once 'getFunctions.php';
 include_once 'parseFunctions.php';
+include_once 'parseVotesBase.php';
 include_once 'saveFunctions.php';
+include_once 'checkFunctions.php';
 include_once 'functions.php';
 
 //	[SETTING] Database settings
-define ('PG_HOST',	'127.0.0.1');
+define ('PG_HOST',	'192.168.110.31');
 define ('PG_PORT',	5432);
 define ('PG_USER',	'parladaddy');
 define ('PG_PASS',	'razvrat');
-define ('PG_NAME',	'p6');
+define ('PG_NAME',	'parladata-sl-2');
 
 //  [SETTING] Notification/admin mail address
 define ('MAIL_NOTIFY',	'filip@danesjenovdan.si');
@@ -51,8 +53,8 @@ define ('DOC_LOCATION',	'/home/parladaddy/parlacdn/v1/dokumenti/');
 
 //  [SETTING] Execute script after finish - script to execute using exec() function. Careful!
 define ('ON_IMPORT_EXEC_SCRIPT', ''); // it uses sprintf() with $_global_oldest_date as second variable
-//define ('EXEC_SCRIPT_RUNNER', '/home/parladaddy/parlalize/runner.sh');
-define ('EXEC_SCRIPT_RUNNER', '');
+// da se ne pozene fast update // define ('EXEC_SCRIPT_RUNNER', '/home/parladaddy/parlalize/fast_runner.sh');
+//define ('EXEC_SCRIPT_RUNNER', '/home/parladaddy/parlalize/test.sh');
 $_global_oldest_date = null;
 
 //  [SETTING] Classifications for DTs
@@ -66,7 +68,7 @@ define ('FETCH_TIMEOUT', 0);
 define ('DZ_URL',	'http://www.dz-rs.si');
 
 //	[SETTING] Session setting
-define ('CURRENT_SESSION', 'VII');
+define ('CURRENT_SESSION', 'VIII');
 
 //  For benchmark purposes
 //$benchmark = microtime(true);
@@ -84,9 +86,10 @@ define('SMS_FROM', "031583610");
 $SMS_TO = array("031583610");
 
 define('MAILGUN_KEY', 'key-0rr45z7eu1hy1icm645xz7fn5xegbcf0');
-define('MAILGUN_DOMAIN', 'sandbox8d444a91a3c445c593b78d5d70008039.mailgun.org');
+define('MAILGUN_DOMAIN', 'mg.v9.si');
 define('MAILGUN_FROM', 'ParlaParser <klemensek@gmail.com>'); //Excited User <YOU@YOUR_DOMAIN_NAME>
-$MAILGUN_TO = array('klemensek@gmail.com');
+//$MAILGUN_TO = array('klemensek@gmail.com', 'nmahnich@gmail.com', 'tadej.strok@gmail.com', 'cofek0@gmail.com');
+$MAILGUN_TO = array('klemensek@gmail.com', 'cofek0@gmail.com');
 
 $reportData = array();
 

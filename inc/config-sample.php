@@ -93,4 +93,4 @@ $MAILGUN_TO = array('klemensek@gmail.com');
 
 $reportData = array();
 
-define ('VAR_DUMP', true);
+define ('VAR_DUMP', false);

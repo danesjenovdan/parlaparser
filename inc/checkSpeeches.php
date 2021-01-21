@@ -60,3 +60,30 @@ function isSpeechInReviewStatusChanged($sessionId, $review){
 
     return true;
 }
+/*
+function motionExists($session_id, $organization_id, $date, $name)
+{
+
+    global $conn;
+
+    $sql = "
+    select * from parladata_motion
+    where 
+		organization_id = '" . $organization_id . "' AND
+		date = '" . $date . "' AND 
+		session_id = '" . $session_id . "' AND
+		text = '" . pg_escape_string ($conn, $name) . "' AND 
+		party_id = '" . $organization_id . "'
+		;
+    ";
+
+    $result = pg_query ($conn, $sql);
+    if ($result) {
+        if (pg_num_rows ($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+
+}
+*/

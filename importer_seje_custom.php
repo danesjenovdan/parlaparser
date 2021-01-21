@@ -16,8 +16,16 @@ skip_when_reviews = true/false
 update_sessions_in_review = true/false
 parse_speeches = true/false
 parse_votes = true/false 
+update_epas = true/false   ....
+update_uid = true/false   ....
+
+parse_speeches_force = true / false
  
 USAGE;");
+}
+
+if(file_get_contents('/home/parladaddy/parlalize/parser.lock') != "UNLOCKED"){
+        die("parlalize in progress, skipping parser");
 }
 
 // php importer_seje_custom.php session_id=0 skip_when_reviews=true update_sessions_in_review=false parse_speeches=false parse_votes=false
@@ -25,7 +33,7 @@ if (count($argv) == 1) importerUsage();
 
 
 
-$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs');
+$obligatoryFields = array('session_id', 'skip_when_reviews', 'update_sessions_in_review', 'parse_speeches', 'parse_votes', 'parse_docs', 'parse_speeches_force', 'update_epas', 'update_uid');
 
 
 $sessionCustomOptions = array();
@@ -49,15 +57,22 @@ define('UPDATE_SESSIONS_IN_REVIEW', ($sessionCustomOptions['update_sessions_in_r
 define('PARSE_SPEECHES', ($sessionCustomOptions['parse_speeches'] == 'true') ? true : false);
 define('PARSE_VOTES', ($sessionCustomOptions['parse_votes'] == 'true') ? true : false);
 define('PARSE_DOCS', ($sessionCustomOptions['parse_docs'] == 'true') ? true : false);
+define('PARSE_SPEECHES_FORCE', ($sessionCustomOptions['parse_speeches_force'] == 'true') ? true : false);
+define('UPDATE_EPAS', ($sessionCustomOptions['update_epas'] == 'true') ? true : false);
+define('UPDATE_UID', ($sessionCustomOptions['update_uid'] == 'true') ? true : false);
 
+define('FORCE_UPDATE', true); 
+
+
+// var_dumpp(PARSE_SPEECHES_FORCE);
 
 // Get people array
 $people = getPeople();
 $people_new = array();
-
-
-if ($sessionCustomOptions['session_id'] > 0) {
-
+/*
+include "missingSpeeches.php";
+foreach ($missingSessinsSpeeches as $item) {
+    $sessionCustomOptions['session_id'] = $item;
     $data = getSessionById($sessionCustomOptions['session_id']);
     if (isset($data['gov_id'])) {
 
@@ -65,26 +80,43 @@ if ($sessionCustomOptions['session_id'] > 0) {
         parseSessionsSingle($content, $data['organization_id'], $data);
 
     }
-    die();
+}
+die();
+*/
+if ($sessionCustomOptions['session_id'] > 0) {
+
+    $data = getSessionById($sessionCustomOptions['session_id']);
+    if (isset($data['gov_id'])) {
+        echo "sessin it is";
+        $content = file_get_contents('http://www.dz-rs.si' . htmlspecialchars_decode($data['gov_id']));
+        parseSessionsSingle($content, $data['organization_id'], $data);
+// var_dumpp($sessionCustomOptions['session_id']);
+// var_dumpp($data);
+
+}else{
+        die("no session");
+        }
+    //die();
 
 } else {
-    //die('die allall');
+    die('die allall');
     $urls = array(
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/redne',
         'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDrzavnegaZbora/PoVrstiSeje/izredne'
     );
-    parseSessions($urls, 95);
+    parseSessions($urls, 1);
 
     $url_dt = 'http://www.dz-rs.si/wps/portal/Home/deloDZ/seje/sejeDt/poDt/izbranoDt?idDT=';
     parseSessionsDT($url_dt);
 
 }
 
-sendReport();
-sendSms("DND done");
+
+//sendSms("DND done");
 
 
 // Do things on end
 parserShutdown();
 
 
+//sendReport();

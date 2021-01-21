@@ -1,94 +1,15 @@
 <?php
-/**
- * Save vote to database
- *
- * @param array $session Session data
- * @param int $organization_id Organization ID
- */
-function saveVotes ($session, $organization_id = 95) {
 
-    global $conn, $_global_oldest_date, $people, $reportData;
-
-    // Log
-    var_dumpp($session['id']);
-
-    $session_id = $session['id'];
-
-    logger ('SAVING VOTES FOR SESSION: ' . $session['date']);
-
-    //	Save votes
-    foreach ($session['voting'] as $voting) {
-
-        //	Set name to "dokument" when "naslov" is empty
-        $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
-
-        $sql = "
-			INSERT INTO
-				parladata_motion
-			(created_at, updated_at, organization_id, date, session_id, text, party_id)
-			VALUES
-			(NOW(), NOW(), '" . $organization_id . "', '" . $voting['date'] . "', '" . $session_id . "', '" . pg_escape_string ($conn, $name) . "', '" . $organization_id . "')
-			RETURNING id
-		";
-
-        $reportData["parladata_motion"][] = array($session_id, $voting['date'], $organization_id);
-        $result = pg_query ($conn, $sql);
-        if (pg_affected_rows ($result) > 0) {
-            $insert_row = pg_fetch_row ($result);
-            $motion_id = $insert_row[0];
-
-            $faza = (!empty ($array['faza'])) ? $array['faza'] : '-';
-
-            //	Parse votes etc.
-            $sql = "
-				INSERT INTO
-					parladata_vote
-				(created_at, updated_at, name, motion_id, organization_id, session_id, start_time, result)
-				VALUES
-				(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "', '" . $faza . "')
-				RETURNING id
-			";
-            $reportData["parladata_vote"][] = array($session_id, $voting['date']);
-
-            $result = pg_query ($conn, $sql);
-            if (pg_affected_rows ($result) > 0) {
-                $insert_row = pg_fetch_row ($result);
-                $voting_id = $insert_row[0];
-
-                $order = 0;
-                foreach ($voting['votes'] as $vote) {
-                    $order+=10;
-
-                    if ($vote[4] == 0) {
-                        $person_id = addPerson ($vote[1]);
-                        if (!empty ($person_id)) {
-                            $vote[4] = $person_id;
-                        } else {
-                            continue;
-                        }
-                    }
-
-                    if (strtolower ($vote[3]) == 'ni') {
-                        $realvote = (!empty ($vote[2])) ? 'kvorum' : 'ni';
-                    } else {
-                        $realvote = strtolower ($vote[3]);
-                    }
-
-                    $sql = "
-						INSERT INTO
-							parladata_ballot
-						(created_at, updated_at, vote_id, voter_id, option, voterparty_id)
-						VALUES
-						(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, mb_strtolower($realvote)) . "', '" . getPersonOrganization ($vote[4]) . "')
-					";
-                    pg_query ($conn, $sql);
-                    $reportData["parladata_ballot"][] = array($voting_id);
-                }
-            }
-        }
-    }
-}
-
+/*
+define("BALLOT_OPTIONS_FOR", "za");
+define("BALLOT_OPTIONS_AGAINST", "proti");
+define("BALLOT_OPTIONS_ABSTAIN", "kvorum");
+define("BALLOT_OPTIONS_ABSENT", "ni");
+*/
+define("BALLOT_OPTIONS_FOR", "for");
+define("BALLOT_OPTIONS_AGAINST", "against");
+define("BALLOT_OPTIONS_ABSTAIN", "abstain");
+define("BALLOT_OPTIONS_ABSENT", "absent");
 
 /**
  * Save session to database
@@ -96,34 +17,36 @@ function saveVotes ($session, $organization_id = 95) {
  * @param array $session Session data
  * @param int $organization_id Organization ID
  */
-function saveSession ($session, $organization_id = 95)
+function saveSession($session, $organization_id = 1, $updateSessionStatus = true)
 {
     global $conn, $_global_oldest_date, $people, $reportData;
 
     // Log
     var_dumpp($session['id']);
 
-    logger ('SAVING SESSION: ' . $session['date']);
+    logger('SAVING SESSION: ' . $session['date']);
     if (empty($session['speeches'])) {
 
         $then = new DateTime($session['date']);
         if ((int)$then->diff(date_create('now'))->format('%a') < NOTIFY_NOSPEECH) {
             // Log
-            logger ('SAVING SESSION FAILED: NO SPEECHES');
-            return false;
+            logger('SAVING SESSION FAILED: NO SPEECHES');
+            //    return false;
         }
     }
 
     if (!empty($session['id'])) {
-        if ($session['review_ext'] == 1 && $session['review'] == 0) {
-            $sql = "
+        if ($updateSessionStatus) {
+            if ($session['review_ext'] == 1 && $session['review'] == 0) {
+                $sql = "
 				UPDATE
 					parladata_session
 				SET
 					in_review = FALSE 
 				WHERE
 					id = " . (int)$session['id'];
-            pg_query ($conn, $sql);
+                pg_query($conn, $sql);
+            }
         }
 
         $session_id = $session['id'];
@@ -142,14 +65,16 @@ function saveSession ($session, $organization_id = 95)
 				parladata_session
 			(created_at, updated_at, name, gov_id, organization_id, start_time, in_review)
 			VALUES
-			(NOW(), NOW(), '" . pg_escape_string ($conn, $session['name']) . "', '" . pg_escape_string ($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (int)(bool)$session['review'] . "')
+			(NOW(), NOW(), '" . pg_escape_string($conn, $session['name']) . "', '" . pg_escape_string($conn, $session['link_noid']) . "', '" . $organization_id . "', '" . $session['date'] . "', '" . (int)(bool)$session['review'] . "')
 			RETURNING id
 		";
 
-        $result = pg_query ($conn, $sql);
-        if (pg_affected_rows ($result) > 0) {
+        $result = pg_query($conn, $sql);
+        if (pg_affected_rows($result) > 0) {
             $insert_row = pg_fetch_row($result);
             $session_id = $insert_row[0];
+
+            insertToSessionOrganizations($session_id, $organization_id);
 
             $reportData["parladata_session"][] = array($session_id, $session['date'], $session['name']);
 
@@ -159,12 +84,67 @@ function saveSession ($session, $organization_id = 95)
     }
 
     // Log
-    logger ('SAVED SESSION: ' . $session['date']);
+    logger('SAVED SESSION: ' . $session['date']);
 
     $_global_oldest_date = $session['date'];
 
-    //	Save speeches
+    /*
+1.1. valid_from - date_start
+1.2. valid_to - infinity
+
+after changed status, in_review = false
+
+1.2. valid_to - date_start
+2.1. valid_from - date_start
+2.2. valid_to - infinity
+ * */
+
+    //check
+
+
     foreach ($session['speeches'] as $speech_date => $speech) {
+
+        $checkIfUpdateNeeded = false;
+
+        $hashDb = checkIfSpeechInsertIsUnnecesaryDb($session_id, $speech_date);
+        $hashPotencial = checkIfSpeechInsertIsUnnecesaryParsed($speech_date, $speech);
+
+        var_dumpp("prev: " . $hashDb);
+        var_dumpp("parsed: " . $hashPotencial);
+
+        if ($hashDb != $hashPotencial) {
+            $checkIfUpdateNeeded = true;
+        }
+
+        if (!$checkIfUpdateNeeded) {
+            continue;
+        }
+
+        $postgresTimeNow = getpostgresTimeNow();
+        $oldValidFrom = $postgresTimeNow;
+
+        if (count($session['speeches']) > 0) {
+            if ($session['review_ext'] == 1 && $session['review'] == 0) {
+
+                $sqlUpdate = "
+                UPDATE parladata_speech set valid_to = '$postgresTimeNow', updated_at = '$postgresTimeNow' WHERE 
+                session_id = $session_id and cast(start_time as date) = '$speech_date' AND valid_to = 'infinity'::TIMESTAMP
+                ";
+                pg_query($conn, $sqlUpdate);
+            } else if ($session['review_ext'] == 1 && $session['review'] == 1) {
+                if (PARSE_SPEECHES_FORCE) {
+
+                    $sqlUpdate = "
+                UPDATE parladata_speech set valid_to = '$postgresTimeNow', updated_at = '$postgresTimeNow' WHERE 
+                session_id = $session_id and cast(start_time as date) = '$speech_date' AND valid_to = 'infinity'::TIMESTAMP
+                ";
+                    pg_query($conn, $sqlUpdate);
+                }
+            } else {
+
+            }
+        }
+
         $order = 0;
         foreach ($speech['talks'] as $talk) {
             $order += 10;
@@ -178,131 +158,163 @@ function saveSession ($session, $organization_id = 95)
                 }
             }
 
-            $speechChange = ($speech['insertToDb'])?'parladata_speechinreview':'parladata_speech';
-
-
-            /*
-            1.1. valid_from - date_start
-            1.2. valid_to - infinity
-
-            after changed status, in_review = false
-
-            1.2. valid_to - date_start
-            2.1. valid_from - date_start
-            2.2. valid_to - infinity
-             * */
-
             if ($session['review_ext'] == 1 && $session['review'] == 0) {
-
-                $sqlUpdate = "
-                UPDATE parladata_speech set valid_to = NOW(), updated_at = NOW() WHERE session_id = $session_id
-                ";
-                pg_query($conn, $sqlUpdate);
-
                 $sqlInsertAgain = "
 				INSERT INTO
 					parladata_speech
 				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
 				VALUES
-				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
+				('$postgresTimeNow', '$postgresTimeNow', '" . pg_escape_string($conn, $talk['id']) . "', 
+				'" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', 
+				'" . $speech_date . "', '" . getPersonOrganization($talk['id'], $speech_date) . "', '$oldValidFrom', 'infinity')
 			";
-                pg_query($conn, $sqlInsertAgain);
+                $res = pg_query($conn, $sqlInsertAgain);
+                if (pg_affected_rows($res) > 0) {
+                    $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=review_ext=1review=0");
+                }
 
-            }else if($session['review_ext'] == 1 && $session['review'] == 1){
+            } else if ($session['review_ext'] == 1 && $session['review'] == 1) {
 
-            }else{
+                if (PARSE_SPEECHES_FORCE) {
+                    $sqlInsertAgain = "
+				INSERT INTO
+					parladata_speech
+				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
+				VALUES
+				('$postgresTimeNow', '$postgresTimeNow', '" . pg_escape_string($conn, $talk['id']) . "', 
+				'" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', 
+				'" . $speech_date . "', '" . getPersonOrganization($talk['id'], $speech_date) . "', '$oldValidFrom', 'infinity')
+			";
+                    $res = pg_query($conn, $sqlInsertAgain);
+                    if (pg_affected_rows($res) > 0) {
+                        $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=review_ext=1review=1");
+                    }
+                }
+            } else {
                 $sql = "
 				INSERT INTO
 					parladata_speech
 				(created_at, updated_at, speaker_id, content, \"order\", session_id, start_time, party_id, valid_from, valid_to)
 				VALUES
-				(NOW(), NOW(), '" . pg_escape_string($conn, $talk['id']) . "', '" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', '" . $speech_date . "', '" . getPersonOrganization($talk['id']) . "', NOW(), 'infinity')
+				('$postgresTimeNow', '$postgresTimeNow', '" . pg_escape_string($conn, $talk['id']) . "', 
+				'" . pg_escape_string($conn, @$talk['vsebina']) . "', '" . $order . "', '" . $session_id . "', 
+				'" . $speech_date . "', '" . getPersonOrganization($talk['id'], $speech_date) . "', '" . $speech_date . "', 'infinity')
 			";
-                pg_query($conn, $sql);
+                $res = pg_query($conn, $sql);
+                if (pg_affected_rows($res) > 0) {
+                    $reportData["parladata_speech"][] = array($talk['id'], $speech_date, "Speech=new");
+                }
             }
-
-
-            $reportData["parladata_speech"][] = array($talk['id'], $speech_date);
         }
     }
 
 
+    //if (empty($session['id'])) {
 
-    if (empty($session['id'])) {
+    var_dumpp("VOTES HERE");
+    var_dumpp($session['voting']);
+    //	Save votes
+    foreach ($session['voting'] as $voting) {
+        //var_dump($voting);
+        //	Set name to "dokument" when "naslov" is empty
+        $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
 
-        //	Save votes
-        foreach ($session['voting'] as $voting) {
+        if (motionExists($session_id, $organization_id, $voting['date'], $name, $voting['uid'])) {
+            continue;
+        } else {
+            var_dumpp("motion exists:  " . $session_id . " " . $organization_id . " " . $voting['date'] . " " . $name);
+        }
 
-            //	Set name to "dokument" when "naslov" is empty
-            $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
 
-            $sql = "
+        $sql = "
 				INSERT INTO
 					parladata_motion
-				(created_at, updated_at, organization_id, date, session_id, text, party_id)
+				(created_at, updated_at, organization_id, date, session_id, text, party_id, epa, uid)
 				VALUES
-				(NOW(), NOW(), '" . $organization_id . "', '" . $voting['date'] . "', '" . $session_id . "', '" . pg_escape_string ($conn, $name) . "', '" . $organization_id . "')
+				(NOW(), NOW(), '" . $organization_id . "', '" . $voting['date'] . "', '" . $session_id . "', '" . pg_escape_string($conn, $name) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $voting["epa"]) . "', '" . pg_escape_string($conn, $voting["uid"]) . "')
 				RETURNING id
 			";
 
-            $reportData["parladata_motion"][] = array($session_id, $voting['date'], $organization_id);
-            $result = pg_query ($conn, $sql);
-            if (pg_affected_rows ($result) > 0) {
-                $insert_row = pg_fetch_row ($result);
-                $motion_id = $insert_row[0];
+        $reportData["parladata_motion"][] = array($session_id, $voting['date'], $organization_id);
+        $result = pg_query($conn, $sql);
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $motion_id = $insert_row[0];
 
-                $faza = (!empty ($array['faza'])) ? $array['faza'] : '-';
+            $faza = (!empty ($array['faza'])) ? $array['faza'] : '-';
 
-                //	Parse votes etc.
-                $sql = "
+            //	Parse votes etc.
+            $sql = "
 					INSERT INTO
 						parladata_vote
 					(created_at, updated_at, name, motion_id, organization_id, session_id, start_time, result)
 					VALUES
-					(NOW(), NOW(), '" . pg_escape_string ($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "', '" . $faza . "')
+					(NOW(), NOW(), '" . pg_escape_string($conn, $name) . "', '" . $motion_id . "', '" . $organization_id . "', '" . $session_id . "', '" . $voting['date'] . ' ' . $voting['time'] . "', '" . $faza . "')
 					RETURNING id
 				";
-                $reportData["parladata_vote"][] = array($session_id, $voting['date']);
+            $reportData["parladata_vote"][] = array($session_id, $voting['date']);
 
-                $result = pg_query ($conn, $sql);
-                if (pg_affected_rows ($result) > 0) {
-                    $insert_row = pg_fetch_row ($result);
-                    $voting_id = $insert_row[0];
+            $result = pg_query($conn, $sql);
+            if (pg_affected_rows($result) > 0) {
+                $insert_row = pg_fetch_row($result);
+                $voting_id = $insert_row[0];
 
-                    $order = 0;
-                    foreach ($voting['votes'] as $vote) {
-                        $order+=10;
+                $order = 0;
+                foreach ($voting['votes'] as $vote) {
+                    $order += 10;
 
-                        if ($vote[4] == 0) {
-                            $person_id = addPerson ($vote[1]);
-                            if (!empty ($person_id)) {
-                                $vote[4] = $person_id;
-                            } else {
-                                continue;
-                            }
-                        }
-
-                        if (strtolower ($vote[3]) == 'ni') {
-                            $realvote = (!empty ($vote[2])) ? 'kvorum' : 'ni';
+                    if ($vote[4] == 0) {
+                        $person_id = addPerson($vote[1]);
+                        if (!empty ($person_id)) {
+                            $vote[4] = $person_id;
                         } else {
-                            $realvote = strtolower ($vote[3]);
+                            continue;
                         }
+                    }
 
-                        $sql = "
+                    switch (strtolower($vote[3])) {
+                        case "za":
+                            $realvote = BALLOT_OPTIONS_FOR;
+                            break;
+                        case "proti":
+                            $realvote = BALLOT_OPTIONS_AGAINST;
+                            break;
+                        case "kvorum":
+                            $realvote = BALLOT_OPTIONS_ABSTAIN;
+                            break;
+                        case "ni":
+			    if (strtolower($vote[2]) == "kvorum") {
+				$realvote = BALLOT_OPTIONS_ABSTAIN;
+				//var_dump($realvote);
+			    } else {
+                                $realvote = BALLOT_OPTIONS_ABSENT;
+				//var_dump($realvote);
+                            }
+                            break;
+                        default:
+                            $realvote = "ballot_xxx";
+                            break;
+                    }
+
+                    $sql = "
 							INSERT INTO
 								parladata_ballot
 							(created_at, updated_at, vote_id, voter_id, option, voterparty_id)
 							VALUES
-							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', '" . pg_escape_string ($conn, mb_strtolower($realvote)) . "', '" . getPersonOrganization ($vote[4]) . "')
+							(NOW(), NOW(), '" . $voting_id . "', '" . $vote[4] . "', 
+							'" . pg_escape_string($conn, mb_strtolower($realvote)) . "', 
+							'" . getPersonOrganization($vote[4], $voting['date']) . "')
 						";
-                        pg_query ($conn, $sql);
-                        $reportData["parladata_ballot"][] = array($voting_id);
-                    }
+
+                    pg_query($conn, $sql);
+                    $reportData["parladata_ballot"][] = array($voting_id);
                 }
             }
         }
-        var_dump("documetn save");
-        //	Save documents
+    }
+    var_dumpp("documetn save");
+    //	Save documents
+    if (empty($session['id'])) {
         foreach ($session['documents'] as $document) {
             if (!empty($document['link'])) {
                 $sql = "
@@ -310,12 +322,12 @@ function saveSession ($session, $organization_id = 95)
 						parladata_link
 					(created_at, updated_at, url, note, organization_id, date, name, session_id)
 					VALUES
-					(NOW(), NOW(), '" . pg_escape_string ($conn, $document['link']) . "', '" . pg_escape_string ($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string ($conn, $document['date']) . "', '" . pg_escape_string ($conn, $document['title']) . "', '" . $session_id . "')
+					(NOW(), NOW(), '" . pg_escape_string($conn, $document['link']) . "', '" . pg_escape_string($conn, $document['filename']) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $document['date']) . "', '" . pg_escape_string($conn, $document['title']) . "', '" . $session_id . "')
 				";
-                pg_query ($conn, $sql);
+                pg_query($conn, $sql);
 
                 $reportData["parladata_link"][] = array($document['title']);
-                var_dump("documetn saveok");
+                var_dumpp("documetn saveok");
                 //  Download documents
                 if (DOC_DOWNLOAD) {
                     file_put_contents(DOC_LOCATION . $document['filename'], fopen($document['link'], 'r'));
@@ -331,30 +343,30 @@ function saveSession ($session, $organization_id = 95)
  * @param string $name Name
  * @return int Person's ID
  */
-function addPerson ($name)
+function addPerson($name)
 {
     global $conn, $people, $people_new;
 
     // Log
-    logger ('NEW PERSON: ' . $name);
+    logger('NEW PERSON: ' . $name);
 
     $sql = "
 		INSERT INTO
 			parladata_person
 		(created_at, updated_at, name, name_parser, active)
 		VALUES
-		(NOW(), NOW(), '" . pg_escape_string ($conn, mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")) . "', '" . pg_escape_string ($conn, mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")) . "', 'true')
+		(NOW(), NOW(), '" . pg_escape_string($conn, mb_convert_case($name, MB_CASE_TITLE, "UTF-8")) . "', '" . pg_escape_string($conn, mb_convert_case($name, MB_CASE_TITLE, "UTF-8")) . "', 'true')
 		RETURNING id
 	";
-    $result = pg_query ($conn, $sql);
-    if (pg_affected_rows ($result) > 0) {
-        $insert_row = pg_fetch_row ($result);
+    $result = pg_query($conn, $sql);
+    if (pg_affected_rows($result) > 0) {
+        $insert_row = pg_fetch_row($result);
         $person_id = $insert_row[0];
 
         $people[$person_id] = array(
             'id' => $person_id,
-            'name' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8"),
-            'name_parser' => mb_convert_case ($name, MB_CASE_TITLE, "UTF-8")
+            'name' => mb_convert_case($name, MB_CASE_TITLE, "UTF-8"),
+            'name_parser' => mb_convert_case($name, MB_CASE_TITLE, "UTF-8")
         );
         $people_new[$name] = $person_id;
 
@@ -363,4 +375,283 @@ function addPerson ($name)
         return $person_id;
     }
     return 0;
+}
+
+function insertToSessionOrganizations($session_id, $organization_id)
+{
+    global $conn;
+    $sessionOrganizationId = null;
+
+    $sql = "
+			INSERT INTO
+				parladata_session_organizations
+			(session_id, organization_id)
+			VALUES
+			('" . $session_id . "', '" . $organization_id . "' )
+			RETURNING id
+		";
+
+    $result = pg_query($conn, $sql);
+    if ($result) {
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $sessionOrganizationId = $insert_row[0];
+        }
+    }
+
+    return $sessionOrganizationId;
+}
+
+function deleteSessionRelation($sessionId)
+{
+    global $conn;
+
+    $sql = "DELETE from parladata_ballot WHERE
+parladata_ballot.vote_id IN (SELECT parladata_vote.id FROM parladata_vote WHERE session_id = '" . $sessionId . "');";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE FROM parladata_vote WHERE session_id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_motion WHERE  session_id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE FROM parladata_link WHERE session_id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_speech WHERE session_id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_session_organizations WHERE session_id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+    $sql = "DELETE from parladata_session WHERE id = '" . $sessionId . "';";
+    $result = pg_query($conn, $sql);
+
+}
+
+function makeSessionBackupInDeleted($sessionId)
+{
+    global $conn;
+
+    $sql = "INSERT INTO parladata_session_deleted (id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review)
+    SELECT id, created_at, updated_at, name, gov_id, start_time, end_time, organization_id, classification, mandate_id, in_review from parladata_session
+    WHERE parladata_session.id = " . $sessionId . ";
+";
+    var_dumpp($sql);
+    $result = pg_query($conn, $sql);
+
+    $sessionInsertedId = 0;
+    if ($result) {
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $sessionInsertedId = $insert_row;
+        }
+    }
+
+    var_dumpp($sessionInsertedId);
+    return $sessionInsertedId;
+}
+
+
+function insertVotingDocument($motionId, $organization_id, $session_id, $date, $name, $items)
+{
+    global $conn;
+    $return = array();
+
+
+    foreach ($items as $item) {
+
+
+        if (documentLinkExists($motionId, $organization_id, $session_id, $date, $name, $item)) {
+            print_r("getLinkDocument EXIST");
+            continue;
+        }
+        $name = $item['urlName'];
+
+        $urlName = $item['urlName'];
+        $urlLink = $item['urlLink'];
+
+        $sql = "
+					INSERT INTO
+						parladata_link
+					(created_at, updated_at, url, note, organization_id, date, name, session_id, motion_id )
+					VALUES
+					(NOW(), NOW(), '" . pg_escape_string($conn, $urlLink) . "', '" . pg_escape_string($conn, $urlName) . "', '" . $organization_id . "', '" . pg_escape_string($conn, $date) . "', '" . pg_escape_string($conn, $name) . "', '" . $session_id . "', '" . $motionId . "')
+					RETURNING id
+				";
+        $result = pg_query($conn, $sql);
+
+
+        if (pg_affected_rows($result) > 0) {
+            $insert_row = pg_fetch_row($result);
+            $link_id = $insert_row[0];
+
+            $return[] = $link_id;
+        }
+    }
+
+
+    return $return;
+}
+
+
+function deleteExistingDocument($organization_id, $session_id, $date, $name, $item)
+{
+    global $conn;
+    $return = array();
+
+    $urlName = $item['urlName'];
+    $urlLink = $item['urlLink'];
+
+    $sql = "
+					delete from
+						parladata_link
+						where 
+						url = '" . pg_escape_string($conn, $urlLink) . "' and
+						note = '" . pg_escape_string($conn, $urlName) . "' and
+						organization_id = '" . $organization_id . "' and 
+						date = '" . pg_escape_string($conn, $date) . "' and
+						session_id = '" . $session_id . "'
+					;
+				";
+
+    print_r($sql);
+
+    $result = pg_query($conn, $sql);
+    $mResultArray = null;
+    if ($result) {
+        print_r(pg_num_rows($result));
+        if (pg_num_rows($result) > 0) {
+            return true;
+        }
+    }
+    return false;
+
+}
+
+function updateSessionVotesEpas($session, $session_id, $organization_id)
+{
+    global $conn;
+
+    foreach ($session['voting'] as $voting) {
+
+        $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
+
+        $epa = trim($voting["epa"]);
+        if (empty($epa)) {
+            continue;
+        }
+
+        $date = $voting['date'];
+        $uid = $voting['uid'];
+
+        $sql = "
+    select * from parladata_motion
+    where 
+		organization_id = '" . $organization_id . "' AND
+		CAST(date as DATE) = '$date' AND
+		session_id = '" . $session_id . "' AND
+		text = '" . pg_escape_string($conn, $name) . "' AND 
+		party_id = '" . $organization_id . "'
+		;
+    ";
+
+        $result = pg_query($conn, $sql);
+        if ($result) {
+            if (pg_num_rows($result) > 0) {
+//                if($result["uid"]==''){
+//                    updateUid($session_id, $organization_id, $date, $name, $uid);
+//                }
+            }
+        }
+
+
+        if (motionExists($session_id, $organization_id, $date, $name, $uid)) {
+            updateEpa($session_id, $organization_id, $date, $name, $uid, $epa);
+        }
+    }
+
+}
+
+function updateSessionVotesUid($session, $session_id, $organization_id)
+{
+    global $conn;
+
+    foreach ($session['voting'] as $voting) {
+
+        $name = (!empty ($voting['naslov'])) ? $voting['naslov'] . ' - ' . $voting['dokument'] : $voting['dokument'];
+        $date = $voting['date'];
+        $uid = $voting['uid'];
+
+        $sql = "
+    select * from parladata_motion
+    where 
+		organization_id = '" . $organization_id . "' AND
+		CAST(date as DATE) = '$date' AND
+		session_id = '" . $session_id . "' AND
+		text = '" . pg_escape_string($conn, $name) . "' AND 
+		party_id = '" . $organization_id . "'
+		;
+    ";
+
+        $result = pg_query($conn, $sql);
+        if ($result) {
+            if (pg_num_rows($result) > 0) {
+                if ($result["uid"] == '') {
+                    updateUid($session_id, $organization_id, $date, $name, $uid);
+                }
+            }
+        }
+    }
+
+}
+
+function updateUid($session_id, $organization_id, $date, $name, $uid)
+{
+    global $conn;
+
+    $sql = "
+    update parladata_motion
+    set uid = '" . pg_escape_string($conn, $uid) . "'
+    where 
+		organization_id = '" . $organization_id . "' AND
+		CAST(date as DATE) = '$date' AND
+		session_id = '" . $session_id . "' AND
+		text = '" . pg_escape_string($conn, $name) . "' AND 
+		party_id = '" . $organization_id . "'
+		;
+    ";
+
+    $result = pg_query($conn, $sql);
+    if ($result) {
+        if (pg_num_rows($result) > 0) {
+            echo '.';
+        }
+    }
+}
+
+function updateEpa($session_id, $organization_id, $date, $name, $uid, $epa)
+{
+    global $conn;
+
+    $sql = "
+    update parladata_motion
+    set epa = '" . pg_escape_string($conn, $epa) . "'
+    where 
+		organization_id = '" . $organization_id . "' AND
+		CAST(date as DATE) = '$date' AND
+		session_id = '" . $session_id . "' AND
+		text = '" . pg_escape_string($conn, $name) . "' AND 
+		party_id = '" . $organization_id . "' AND
+		uid = '" . $uid . "'
+		;
+    ";
+
+    $result = pg_query($conn, $sql);
+    if ($result) {
+        if (pg_num_rows($result) > 0) {
+            echo '.';
+        }
+    }
 }

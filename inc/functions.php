@@ -33,8 +33,8 @@ function parserShutdown ()
 {
 	global $_global_oldest_date;
 
-    if (EXEC_SCRIPT_RUNNER) exec(sprintf('%s', EXEC_SCRIPT_RUNNER));
-	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
+//    if (EXEC_SCRIPT_RUNNER) exec(sprintf('%s', EXEC_SCRIPT_RUNNER));
+//	if (ON_IMPORT_EXEC_SCRIPT) exec(sprintf('%s%s', ON_IMPORT_EXEC_SCRIPT, $_global_oldest_date));
 }
 
 /**
@@ -67,9 +67,10 @@ function downloadPage ($url)
 		// Log
 		logger ('TIMEOUT: ' . (string)$url);
 
-		if (MAIL_NOTIFY)
-			mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
-
+		if (MAIL_NOTIFY) {
+            mail(MAIL_NOTIFY, '[OMFG PANIC!!1!] DZ-RS unreachable', 'See Subject');
+            sendReport('[OMFG PANIC!!1!] DZ-RS unreachable, Shutdown: getting timeouts.');
+        }
 		die('Shutdown: getting timeouts.');
 	}
 	return $content;
@@ -142,7 +143,7 @@ function sendSms($message){
 
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
-        $result[] = curl_exec($ch);
+        //$result[] = curl_exec($ch);
         curl_close($ch);
     }
     return $result;
@@ -152,4 +153,23 @@ function var_dumpp($in){
     if(VAR_DUMP){
         var_dump($in);
     }
+}
+
+function validateDate($date)
+{
+    $d = DateTime::createFromFormat('d.m.Y', $date);
+    return $d && $d->format('d.m.Y') === $date;
+}
+
+function asciireplace($in){
+    $search = array();
+    $replace = array();
+    $search[] = '&#382;';
+    $replace[] = 'ž';
+    $search[] = '&#353;';
+    $replace[] = 'š';
+    $search[] = '&#269;';
+    $replace[] = 'č';
+
+    return str_replace($search, $replace, $in);
 }
