@@ -414,7 +414,7 @@ function parseSpeeches($url, $datum)
                 );
 
                 // Preveri, če je pred tekstom še ime stranke v ()
-                if (isset ($parts[$i + 1]) && preg_match('/\(.*?\)$/s', trim($parts[$i + 1]))) {
+                if (isset ($parts[$i + 1]) && preg_match('/\(PS.*?\)$/s', trim($parts[$i + 1]))) {
                     $tmp['stranka'] = substr(trim($parts[$i + 1]), strrpos(trim($parts[$i + 1]), '(') + 1, -1);
                     $i++;
 
